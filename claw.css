@@ -27,10 +27,11 @@ body.claw-page {
 .carriage { --drop: 0px; position: absolute; top: 12px; left: 0; width: 76px; z-index: 3; will-change: transform; }
 /* Rope + claw hang from the trolley and swing around it. */
 .swing { transform-origin: 50% 0; will-change: transform; }
-.swing.settle { transition: transform .45s ease-out; }
+.swing.settle { transition: transform .8s cubic-bezier(.3, 0, .2, 1); }
 .trolley { width: 30px; height: 14px; margin: 0 auto; border-radius: 4px; background: linear-gradient(180deg, #ffd34d, #b37400); border: 1.5px solid #7a4a00; }
-.rope { width: 3px; height: calc(8px + var(--drop)); margin: 0 auto; background: repeating-linear-gradient(180deg, #cfd5e1 0 3px, #7a8395 3px 6px); transition: height var(--speed, .9s) ease-in-out; }
-.claw { display: block; width: 76px; height: auto; filter: drop-shadow(0 4px 6px rgba(0, 0, 0, .5)); }
+/* Rope stretches (scaleY) and the claw slides down (translateY): both run on the GPU. */
+.rope { width: 3px; height: 8px; margin: 0 auto; background: linear-gradient(90deg, #7a8395, #eef1f6 50%, #7a8395); transform-origin: 50% 0; transition: transform var(--speed, 1.8s) cubic-bezier(.45, 0, .25, 1); will-change: transform; }
+.claw { display: block; width: 76px; height: auto; filter: drop-shadow(0 4px 6px rgba(0, 0, 0, .5)); transition: transform var(--speed, 1.8s) cubic-bezier(.45, 0, .25, 1); will-change: transform; }
 .prong { transform-box: fill-box; transition: transform .35s ease; }
 .prong.left { transform-origin: 100% 0; }
 .prong.right { transform-origin: 0 0; }
@@ -40,7 +41,7 @@ body.claw-page {
 .claw.closed .prong.right { transform: rotate(10deg); }
 
 .chests { position: absolute; left: 8px; right: 8px; bottom: 10px; z-index: 2; display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 4px; }
-.chest { position: relative; aspect-ratio: 100 / 80; transition: transform var(--speed, .9s) ease-in-out; }
+.chest { position: relative; aspect-ratio: 100 / 80; transition: transform var(--speed, 1.8s) cubic-bezier(.45, 0, .25, 1); will-change: transform; }
 .chest svg { width: 100%; height: 100%; overflow: visible; filter: drop-shadow(0 6px 6px rgba(0, 0, 0, .55)); }
 .chest .lid { transform-box: fill-box; transform-origin: 0% 100%; transition: transform .5s cubic-bezier(.2, 1.3, .4, 1); }
 .chest.open .lid { transform: translate(-6%, -10%) rotate(-38deg); }

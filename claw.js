@@ -149,7 +149,7 @@
     $("lockNote").hidden = false;
     $("dropBtn").disabled = true;
     claw.classList.remove("open", "closed");
-    carriage.style.setProperty("--drop", "0px");
+    setDrop(0);
     swing.style.transform = ""; angle = 0; kick = 0;
     chests.forEach((c) => { c.style.transform = ""; c.classList.remove("open", "faded"); });
     parkCenter();
@@ -187,6 +187,13 @@
   $("phone").addEventListener("input", () => ($("phoneErr").textContent = ""));
 
   // ---------- DROP ----------
+  // Lowers (or raises) the claw: the rope stretches and the claw slides, on the GPU.
+  const rope = $("rope");
+  function setDrop(px) {
+    rope.style.transform = `scaleY(${((8 + px) / 8).toFixed(3)})`;
+    claw.style.transform = `translate3d(0,${px.toFixed(1)}px,0)`;
+  }
+
   async function drop() {
     if (!moving || busy) return;
     busy = true; moving = false;
@@ -200,33 +207,35 @@
     const tip = tipX();
     let i = 0;
     c.forEach((v, k) => { if (Math.abs(v - tip) < Math.abs(c[i] - tip)) i = k; });
+
+    // Glide over the chest while the swinging calms down.
     swing.classList.add("settle");
     swing.style.transform = "rotate(0deg)";
-    carriage.style.transition = "transform .35s ease";
+    carriage.style.transition = "transform .8s cubic-bezier(.3, 0, .2, 1)";
     place(c[i]); x = c[i];
-    await wait(460);
+    await wait(1050);
     carriage.style.transition = "";
     swing.classList.remove("settle");
     angle = 0;
 
-    // Lower the claw so its fingers reach around the chest lid.
+    // Lower the claw slowly so its fingers reach around the chest lid.
     const chest = chests[i];
-    const g = glass.getBoundingClientRect(), cr = chest.getBoundingClientRect(), cl = claw.getBoundingClientRect();
+    const cr = chest.getBoundingClientRect(), cl = claw.getBoundingClientRect();
     const dropPx = Math.max(0, cr.top - cl.bottom + cr.height * 0.42);
     const request = api("/api/play", { brand: G.campaign, phone: verified, egg: i }).catch(() => ({ ok: false, error: "server_error" }));
-    carriage.style.setProperty("--speed", "0.9s");
-    chest.style.setProperty("--speed", "0.9s");
-    carriage.style.setProperty("--drop", dropPx + "px");
-    await wait(950);
+    carriage.style.setProperty("--speed", "1.8s");
+    chest.style.setProperty("--speed", "1.8s");
+    setDrop(dropPx);
+    await wait(1850);
     claw.classList.remove("open"); claw.classList.add("closed");
     if (navigator.vibrate) navigator.vibrate(40);
-    await wait(380);
+    await wait(700);
 
     const out = await request;
     if (!out.ok || out.status === "not_found") {
       claw.classList.remove("closed"); claw.classList.add("open");
-      carriage.style.setProperty("--drop", "0px");
-      await wait(900);
+      setDrop(0);
+      await wait(1850);
       busy = false; $("phone").disabled = false;
       lock();
       $("status").textContent = "📱 Masukkan nombor telefon akaun anda untuk mula.";
@@ -239,17 +248,17 @@
       return;
     }
 
-    // Lift the chest, then open it.
+    // Lift the chest slowly, pause, then open it.
     if (!data.test) save(data);
     const lift = dropPx * 0.6;
-    carriage.style.setProperty("--drop", dropPx - lift + "px");
-    chest.style.transform = `translateY(${-lift}px)`;
+    setDrop(dropPx - lift);
+    chest.style.transform = `translate3d(0,${-lift}px,0)`;
     chests.forEach((o) => { if (o !== chest) o.classList.add("faded"); });
     $("status").textContent = "💎 Dapat! Membuka peti...";
-    await wait(1000);
+    await wait(2200);
     chest.classList.add("open");
     burst(chest, data.amount);
-    await wait(900);
+    await wait(1000);
     openModal(data);
     showClaimed(data, true);
     loadWinners();
