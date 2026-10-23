@@ -295,7 +295,7 @@
       return;
     }
 
-    save(data);
+    if (!data.test) save(data); // test numbers are not remembered, so a refresh gives a new try
     await hit(3);
     $("hammer").classList.remove("show", "swing");
     egg.classList.add("broken");
