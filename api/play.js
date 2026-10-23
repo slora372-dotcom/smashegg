@@ -5,7 +5,7 @@ const { BRANDS, brandOf, keysFor, pipeline, cmd, cleanPhone, pickPrize, makeCode
 
 // Numbers for testing, per game: unlimited plays, no claim is recorded.
 // Remove a number here when testing is finished.
-const TEST_PHONES = { clawggc: ["0164200354"] };
+const TEST_PHONES = { ggc: ["0164200354"], ppg: ["0164200354"], clawggc: ["0164200354"] };
 
 module.exports = async (req, res) => {
   if (req.method !== "POST") return send(res, 405, { ok: false, error: "method" });
