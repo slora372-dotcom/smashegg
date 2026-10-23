@@ -14,6 +14,8 @@
     h2 { font-size: 16px; margin-bottom: 10px; color: var(--gold); }
     .muted { color: var(--muted); }
     .card { margin-top: 16px; padding: 16px; border-radius: 12px; background: var(--card); border: 1px solid var(--line); }
+    select { padding: 10px 12px; border-radius: 8px; border: 1px solid var(--line); background: #0b1222; color: var(--text); font: inherit; }
+    td button { padding: 6px 10px; font-size: 12px; margin-right: 4px; }
     input, textarea { width: 100%; padding: 10px 12px; border-radius: 8px; border: 1px solid var(--line); background: #0b1222; color: var(--text); font: inherit; }
     textarea { min-height: 120px; resize: vertical; font-family: Consolas, monospace; }
     button { padding: 10px 16px; border-radius: 8px; border: 0; background: var(--gold); color: #1a1200; font: inherit; font-weight: 700; cursor: pointer; }
@@ -44,7 +46,8 @@
     <section class="card" id="login">
       <h2>Log masuk</h2>
       <form id="loginForm" class="row">
-        <input id="password" type="password" placeholder="Kata laluan admin" autocomplete="current-password">
+        <input id="username" placeholder="Nama pengguna" autocomplete="username" autocapitalize="none">
+        <input id="password" type="password" placeholder="Kata laluan" autocomplete="current-password">
         <button type="submit">Masuk</button>
       </form>
       <p class="msg err" id="loginMsg"></p>
@@ -53,7 +56,7 @@
     <div id="panel" hidden>
       <section class="card">
         <div class="row" style="justify-content:space-between;margin-top:0">
-          <h2 style="margin:0">Ringkasan</h2>
+          <div><h2 style="margin:0">Ringkasan</h2><span class="muted" id="whoami"></span></div>
           <div class="row" style="margin:0"><button class="ghost" id="refresh">Muat semula</button><button class="ghost" id="logout">Log keluar</button></div>
         </div>
         <div class="stats" style="margin-top:12px">
@@ -63,7 +66,7 @@
         </div>
       </section>
 
-      <section class="card">
+      <section class="card" data-roles="owner admin">
         <h2>Tambah nombor pemain</h2>
         <p class="muted">Tampal nombor (satu setiap baris), atau pilih fail CSV / TXT. Jika fail ada lajur "Phone", hanya lajur itu digunakan. Nombor yang sudah ada tidak akan berganda.</p>
         <textarea id="paste" placeholder="0123456789&#10;0177666674&#10;..."></textarea>
@@ -81,7 +84,7 @@
           <button type="submit">Cari</button>
         </form>
         <div id="lookupResult" class="msg"></div>
-        <div class="row" id="lookupActions" hidden>
+        <div class="row" id="lookupActions" data-roles="owner admin" hidden>
           <button class="ghost" id="resetBtn">Benarkan main semula</button>
           <button class="danger" id="removeBtn">Buang dari senarai pemain</button>
         </div>
@@ -99,7 +102,44 @@
         <p class="msg muted" id="claimsInfo"></p>
       </section>
 
-      <section class="card">
+      <section class="card" data-roles="owner">
+        <h2>Pengguna admin</h2>
+        <p class="muted"><b>Admin</b>: semua kecuali urus pengguna. <b>Staff</b>: cari nombor dan lihat tuntutan sahaja.</p>
+        <div class="table-wrap"><table id="usersTable">
+          <thead><tr><th>Nama pengguna</th><th>Peranan</th><th>Dicipta</th><th></th></tr></thead>
+          <tbody></tbody>
+        </table></div>
+        <form id="addUserForm" class="row">
+          <input id="newUser" placeholder="Nama pengguna (cth: ali)" autocapitalize="none" autocomplete="off">
+          <input id="newPass" type="text" placeholder="Kata laluan (min 8)" autocomplete="new-password">
+          <select id="newRole"><option value="staff">Staff</option><option value="admin">Admin</option></select>
+          <button type="submit">Tambah pengguna</button>
+        </form>
+        <p class="msg" id="userMsg"></p>
+      </section>
+
+      <section class="card" data-roles="admin staff">
+        <h2>Tukar kata laluan saya</h2>
+        <form id="myPassForm" class="row">
+          <input id="oldPass" type="password" placeholder="Kata laluan lama" autocomplete="current-password">
+          <input id="myNewPass" type="password" placeholder="Kata laluan baharu (min 8)" autocomplete="new-password">
+          <button type="submit">Tukar</button>
+        </form>
+        <p class="msg" id="myPassMsg"></p>
+      </section>
+
+      <section class="card" data-roles="owner admin">
+        <div class="row" style="justify-content:space-between;margin-top:0">
+          <h2 style="margin:0">Log aktiviti</h2>
+          <button class="ghost" id="loadAudit">Papar</button>
+        </div>
+        <div class="table-wrap"><table id="auditTable" hidden>
+          <thead><tr><th>Masa</th><th>Pengguna</th><th>Tindakan</th><th>Butiran</th></tr></thead>
+          <tbody></tbody>
+        </table></div>
+      </section>
+
+      <section class="card" data-roles="owner admin">
         <h2 style="color:#fca5a5">Kosongkan senarai pemain</h2>
         <p class="muted">Buang SEMUA nombor pemain (tuntutan yang sudah dibuat tidak dipadam). Taip DELETE untuk sahkan.</p>
         <div class="row">

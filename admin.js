@@ -1,8 +1,10 @@
 (function () {
   const $ = (id) => document.getElementById(id);
-  const KEY = "smashEggAdminKey";
-  let password = "";
-  try { password = sessionStorage.getItem(KEY) || ""; } catch (e) {}
+  const KEY = "smashEggAdminToken";
+  let token = "";
+  let role = "";
+  try { token = sessionStorage.getItem(KEY) || ""; } catch (e) {}
+  const esc = (s) => String(s == null ? "" : s).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
 
   const cleanPhone = (v) => {
     let d = String(v == null ? "" : v).replace(/\D/g, "");
@@ -13,42 +15,64 @@
   async function call(action, data = {}) {
     const r = await fetch("/api/admin", {
       method: "POST",
-      headers: { "Content-Type": "application/json", "x-admin-key": password },
+      headers: { "Content-Type": "application/json", Authorization: "Bearer " + token },
       body: JSON.stringify({ action, ...data }),
     });
     const out = await r.json().catch(() => ({ ok: false, error: "server_error" }));
-    if (r.status === 401) out.error = "wrong_password";
+    // Logged out (expired after 12 hours, or account deleted): back to the login box.
+    if (out.error === "not_logged_in" && action !== "login") showLogin("Sesi tamat. Sila log masuk semula.");
     return out;
   }
   const errText = (e) => ({
-    wrong_password: "Kata laluan salah.",
+    wrong_login: "Nama pengguna atau kata laluan salah.",
+    too_many: "Terlalu banyak cubaan. Cuba lagi selepas 10 minit.",
+    not_logged_in: "Sila log masuk semula.",
+    no_permission: "Anda tiada kebenaran untuk tindakan ini.",
     db_not_connected: "Database belum disambung di Vercel.",
     invalid_phone: "Nombor telefon tidak sah.",
+    bad_username: "Nama pengguna: 3–20 huruf kecil, nombor, titik atau sengkang.",
+    bad_password: "Kata laluan mesti sekurang-kurangnya 8 aksara.",
+    bad_role: "Pilih peranan.",
+    user_exists: "Nama pengguna sudah wujud.",
+    wrong_old_password: "Kata laluan lama salah.",
   }[e] || "Ralat: " + e);
 
   // ---------- Login ----------
+  function showLogin(msg) {
+    token = "";
+    try { sessionStorage.removeItem(KEY); } catch (e) {}
+    $("panel").hidden = true;
+    $("login").hidden = false;
+    $("loginMsg").textContent = msg || "";
+  }
   async function enter() {
-    const out = await call("stats");
-    if (!out.ok) {
-      $("loginMsg").textContent = errText(out.error);
-      return false;
-    }
-    try { sessionStorage.setItem(KEY, password); } catch (e) {}
+    const me = await call("me");
+    if (!me.ok) return showLogin(me.error === "not_logged_in" ? "" : errText(me.error));
+    role = me.role;
+    $("whoami").textContent = `Log masuk sebagai ${me.user} (${me.role})`;
+    document.querySelectorAll("[data-roles]").forEach((el) => {
+      if (!el.dataset.roles.split(" ").includes(role)) el.remove();
+    });
     $("login").hidden = true;
     $("panel").hidden = false;
-    showStats(out);
-    return true;
+    refresh();
+    if (role === "owner") loadUsers();
   }
-  $("loginForm").addEventListener("submit", (e) => {
+  $("loginForm").addEventListener("submit", async (e) => {
     e.preventDefault();
-    password = $("password").value;
+    const out = await call("login", { username: $("username").value, password: $("password").value });
+    if (!out.ok) { $("loginMsg").textContent = errText(out.error); return; }
+    token = out.token;
+    try { sessionStorage.setItem(KEY, token); } catch (e) {}
+    $("password").value = "";
     enter();
   });
-  $("logout").addEventListener("click", () => {
-    try { sessionStorage.removeItem(KEY); } catch (e) {}
+  $("logout").addEventListener("click", async () => {
+    await call("logout").catch(() => {});
+    showLogin("");
     location.reload();
   });
-  if (password) enter();
+  if (token) enter();
 
   // ---------- Stats ----------
   function showStats(s) {
@@ -142,26 +166,28 @@
     e.preventDefault();
     const out = await call("lookup", { phone: $("lookupPhone").value });
     const box = $("lookupResult");
-    if (!out.ok) { box.className = "msg err"; box.textContent = errText(out.error); $("lookupActions").hidden = true; return; }
+    if (!out.ok) { box.className = "msg err"; box.textContent = errText(out.error); if ($("lookupActions")) $("lookupActions").hidden = true; return; }
     current = out.phone;
     box.className = "msg";
     box.innerHTML = `<b>${out.phone}</b>: ${out.isPlayer ? '<span class="ok">pemain berdaftar</span>' : '<span class="err">tiada dalam senarai</span>'}` +
       (out.claim ? `<br>Sudah tuntut <b>RM${out.claim.amount}</b>, kod <b>${out.claim.code}</b>, ${new Date(out.claim.at).toLocaleString()}` : "<br>Belum main.");
-    $("lookupActions").hidden = false;
-    $("resetBtn").hidden = !out.claim;
-    $("removeBtn").hidden = !out.isPlayer;
+    if ($("lookupActions")) {
+      $("lookupActions").hidden = false;
+      $("resetBtn").hidden = !out.claim;
+      $("removeBtn").hidden = !out.isPlayer;
+    }
   });
   $("resetBtn").addEventListener("click", async () => {
     if (!confirm(`Benarkan ${current} main sekali lagi?`)) return;
     const out = await call("resetClaim", { phone: current });
     $("lookupResult").textContent = out.ok ? `${current} boleh main semula.` : errText(out.error);
-    $("lookupActions").hidden = true;
+    if ($("lookupActions")) $("lookupActions").hidden = true;
   });
   $("removeBtn").addEventListener("click", async () => {
     if (!confirm(`Buang ${current} dari senarai pemain?`)) return;
     const out = await call("remove", { phone: current });
     $("lookupResult").textContent = out.ok ? `${current} dibuang.` : errText(out.error);
-    $("lookupActions").hidden = true;
+    if ($("lookupActions")) $("lookupActions").hidden = true;
     refresh();
   });
 
@@ -192,8 +218,69 @@
     a.click();
   });
 
+  // ---------- Users (owner only) ----------
+  async function loadUsers() {
+    const out = await call("listUsers");
+    if (!out.ok) { $("userMsg").className = "msg err"; $("userMsg").textContent = errText(out.error); return; }
+    $("usersTable").querySelector("tbody").innerHTML =
+      `<tr><td><b>owner</b></td><td>owner</td><td class="muted">Vercel</td><td></td></tr>` +
+      out.users.map((u) =>
+        `<tr><td><b>${esc(u.username)}</b></td><td>${esc(u.role)}</td><td>${new Date(u.created).toLocaleDateString()}</td>` +
+        `<td><button class="ghost" data-pass="${esc(u.username)}">Tukar kata laluan</button><button class="danger" data-del="${esc(u.username)}">Padam</button></td></tr>`
+      ).join("");
+  }
+  if ($("usersTable")) {
+    $("usersTable").addEventListener("click", async (e) => {
+      const del = e.target.dataset.del, pass = e.target.dataset.pass;
+      if (del) {
+        if (!confirm(`Padam pengguna ${del}? Mereka akan dilog keluar serta-merta.`)) return;
+        const out = await call("removeUser", { username: del });
+        $("userMsg").className = out.ok ? "msg ok" : "msg err";
+        $("userMsg").textContent = out.ok ? `${del} dipadam.` : errText(out.error);
+        loadUsers();
+      } else if (pass) {
+        const p = prompt(`Kata laluan baharu untuk ${pass} (min 8 aksara):`);
+        if (!p) return;
+        const out = await call("setPassword", { username: pass, password: p });
+        $("userMsg").className = out.ok ? "msg ok" : "msg err";
+        $("userMsg").textContent = out.ok ? `Kata laluan ${pass} ditukar.` : errText(out.error);
+      }
+    });
+    $("addUserForm").addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const username = $("newUser").value.trim().toLowerCase();
+      const out = await call("addUser", { username, password: $("newPass").value, role: $("newRole").value });
+      $("userMsg").className = out.ok ? "msg ok" : "msg err";
+      $("userMsg").textContent = out.ok ? `Pengguna ${username} ditambah. Beri nama pengguna dan kata laluan kepada mereka.` : errText(out.error);
+      if (out.ok) { $("newUser").value = ""; $("newPass").value = ""; loadUsers(); }
+    });
+  }
+
+  // ---------- My password (admin / staff) ----------
+  if ($("myPassForm")) {
+    $("myPassForm").addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const out = await call("changeMyPassword", { oldPassword: $("oldPass").value, password: $("myNewPass").value });
+      $("myPassMsg").className = out.ok ? "msg ok" : "msg err";
+      $("myPassMsg").textContent = out.ok ? "Kata laluan ditukar." : errText(out.error);
+      if (out.ok) { $("oldPass").value = ""; $("myNewPass").value = ""; }
+    });
+  }
+
+  // ---------- Activity log ----------
+  if ($("loadAudit")) {
+    $("loadAudit").addEventListener("click", async () => {
+      const out = await call("audit");
+      if (!out.ok) return;
+      $("auditTable").querySelector("tbody").innerHTML = out.entries.map((a) =>
+        `<tr><td>${new Date(a.at).toLocaleString()}</td><td>${esc(a.user)}</td><td>${esc(a.action)}</td><td>${esc(a.detail)}</td></tr>`
+      ).join("");
+      $("auditTable").hidden = out.entries.length === 0;
+    });
+  }
+
   // ---------- Clear players ----------
-  $("clearBtn").addEventListener("click", async () => {
+  if ($("clearBtn")) $("clearBtn").addEventListener("click", async () => {
     const out = await call("clearPlayers", { confirm: $("confirmDelete").value.trim() });
     $("clearMsg").className = out.ok ? "msg ok" : "msg err";
     $("clearMsg").textContent = out.ok ? "Senarai pemain dikosongkan." : out.error === "confirm" ? "Taip DELETE untuk sahkan." : errText(out.error);

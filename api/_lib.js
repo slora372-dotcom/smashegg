@@ -87,11 +87,63 @@ async function rateLimited(req, limit = 15, seconds = 600) {
   return n > limit;
 }
 
-function isAdmin(req) {
-  const want = process.env.ADMIN_PASSWORD || "";
-  const got = String(req.headers["x-admin-key"] || "");
-  if (!want || got.length !== want.length) return false;
-  return crypto.timingSafeEqual(Buffer.from(got), Buffer.from(want));
+// ---------- Admin accounts ----------
+// Accounts are kept outside the campaign namespace so they carry over to the next event.
+const AUTH = {
+  users: "admin:users",                 // hash: username -> {salt, hash, role, created}
+  session: (t) => "admin:session:" + t, // login token -> {user, role}
+  audit: "admin:audit",                 // who did what
+  tries: (ip) => "admin:tries:" + ip,
+};
+const SESSION_SECONDS = 12 * 60 * 60;
+const ROLES = ["admin", "staff"];
+
+function safeEqual(a, b) {
+  const x = Buffer.from(String(a)), y = Buffer.from(String(b));
+  return x.length === y.length && crypto.timingSafeEqual(x, y);
+}
+function hashPassword(password, salt = crypto.randomBytes(16).toString("hex")) {
+  const hash = crypto.scryptSync(String(password), salt, 32).toString("hex");
+  return { salt, hash };
+}
+
+// Checks a username + password. "owner" always uses the ADMIN_PASSWORD setting in Vercel.
+async function checkLogin(username, password) {
+  const u = String(username || "").trim().toLowerCase();
+  if (!u || !password) return null;
+  if (u === "owner") {
+    const want = process.env.ADMIN_PASSWORD || "";
+    return want && safeEqual(password, want) ? { user: "owner", role: "owner" } : null;
+  }
+  const raw = await cmd("HGET", AUTH.users, u);
+  if (!raw) return null;
+  const rec = JSON.parse(raw);
+  return safeEqual(hashPassword(password, rec.salt).hash, rec.hash) ? { user: u, role: rec.role } : null;
+}
+
+async function createSession(who) {
+  const token = crypto.randomBytes(24).toString("hex");
+  await cmd("SET", AUTH.session(token), JSON.stringify(who), "EX", String(SESSION_SECONDS));
+  return token;
+}
+
+async function getSession(req) {
+  const token = String(req.headers.authorization || "").replace(/^Bearer\s+/i, "");
+  if (!/^[a-f0-9]{48}$/.test(token)) return null;
+  const raw = await cmd("GET", AUTH.session(token));
+  if (!raw) return null;
+  const who = JSON.parse(raw);
+  if (who.user === "owner") return { ...who, token };
+  // A deleted account is logged out at once; a changed role applies at once.
+  const rec = await cmd("HGET", AUTH.users, who.user);
+  return rec ? { user: who.user, role: JSON.parse(rec).role, token } : null;
+}
+
+async function audit(who, action, detail) {
+  await pipeline([
+    ["LPUSH", AUTH.audit, JSON.stringify({ at: new Date().toISOString(), user: who.user, action, detail })],
+    ["LTRIM", AUTH.audit, "0", "499"],
+  ]);
 }
 
 function handleError(res, e) {
@@ -101,4 +153,7 @@ function handleError(res, e) {
   return send(res, 500, { ok: false, error: "server_error" });
 }
 
-module.exports = { NS, KEYS, PRIZES, pipeline, cmd, cleanPhone, pickPrize, makeCode, send, body, rateLimited, isAdmin, handleError };
+module.exports = {
+  NS, KEYS, PRIZES, AUTH, ROLES, pipeline, cmd, cleanPhone, pickPrize, makeCode, send, body, clientIp,
+  rateLimited, hashPassword, checkLogin, createSession, getSession, audit, handleError,
+};
