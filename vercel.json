@@ -1,12 +1,7 @@
 {
   "cleanUrls": true,
   "redirects": [
-    { "source": "/", "destination": "/smashegg/ggc", "permanent": false },
-    { "source": "/index", "destination": "/smashegg/ggc", "permanent": false }
-  ],
-  "rewrites": [
-    { "source": "/smashegg/ggc", "destination": "/index.html" },
-    { "source": "/smashegg/ggc/", "destination": "/index.html" }
+    { "source": "/", "destination": "/smashegg/ggc", "permanent": false }
   ],
   "headers": [
     {
