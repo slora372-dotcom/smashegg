@@ -53,9 +53,41 @@
 
   let busy = false;
 
+  // ---------- Phone number ----------
+  // Accepts 012-345 6789, +6012..., 6012... and returns 0123456789, or "" if not valid.
+  const cleanPhone = (v) => {
+    let d = String(v || "").replace(/\D/g, "");
+    if (d.startsWith("60")) d = d.slice(1);
+    return /^01\d{8,9}$/.test(d) ? d : "";
+  };
+  const mask = (last4) => "****" + last4;
+  $("phoneForm").addEventListener("submit", (e) => e.preventDefault());
+  $("phone").addEventListener("input", () => ($("phoneErr").textContent = ""));
+
+  // ---------- Recent winners list ----------
+  function renderWinners(own) {
+    const rows = (window.RECENT_CLAIMS || []).slice(0, 30).map((w) => ({ ...w, you: false }));
+    if (own) rows.unshift({ phone: own.phone.slice(-4), amount: own.amount, you: true });
+    const html = rows.map((w) =>
+      `<li${w.you ? ' class="you"' : ""}><span>${mask(String(w.phone).slice(-4))}${w.you ? ' <em>Anda</em>' : ""}</span><b>RM${Number(w.amount)}</b></li>`
+    ).join("");
+    const list = $("winList");
+    $("winEmpty").hidden = rows.length > 0;
+    list.parentElement.hidden = rows.length === 0;
+    // More than 5 rows: scroll the list slowly (rows are doubled so the loop is seamless).
+    const scroll = rows.length > 5 && !reduceMotion;
+    list.innerHTML = scroll ? html + html : html;
+    list.classList.toggle("scroll", scroll);
+    list.style.animationDuration = rows.length * 2.2 + "s";
+  }
+
   function showClaimed(data) {
     $("claimedAmount").textContent = "RM" + data.amount;
     $("claimedCode").textContent = data.code;
+    $("claimedPhone").textContent = data.phone || "-";
+    $("phone").value = data.phone || "";
+    $("phone").disabled = true;
+    renderWinners(data.phone ? data : null);
     $("claimed").hidden = false;
     $("status").textContent = "✅ Anda sudah smash. Tuntut hadiah anda di Live Chat.";
     eggs.forEach((b, i) => {
@@ -68,6 +100,7 @@
   function openModal(data) {
     $("prize").textContent = "RM" + data.amount;
     $("code").textContent = data.code;
+    $("modalPhone").textContent = data.phone;
     $("modal").hidden = false;
     $("claimBtn").focus();
   }
@@ -115,9 +148,17 @@
 
   async function smash(egg) {
     if (busy || load()) return;
+    const phone = cleanPhone($("phone").value);
+    if (!phone) {
+      $("phoneErr").textContent = "Sila masukkan nombor telefon yang sah dahulu (contoh: 0123456789).";
+      $("phone").focus();
+      $("phoneForm").classList.remove("nudge"); void $("phoneForm").offsetWidth; $("phoneForm").classList.add("nudge");
+      return;
+    }
     busy = true;
     const i = +egg.dataset.i;
-    const data = { amount: pickPrize(), code: makeCode(), egg: i, at: new Date().toISOString() };
+    const data = { amount: pickPrize(), code: makeCode(), egg: i, phone, at: new Date().toISOString() };
+    $("phone").disabled = true;
     save(data); // saved first, so refreshing mid-animation cannot give a second try
 
     eggs.forEach((b) => { b.disabled = true; if (b !== egg) b.classList.add("faded"); });
@@ -146,6 +187,7 @@
 
   const saved = load();
   if (saved) showClaimed(saved);
+  else renderWinners(null);
 
   // ---------- Falling snow ----------
   const canvas = $("snow");

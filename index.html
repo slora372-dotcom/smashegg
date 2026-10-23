@@ -50,6 +50,12 @@
       </defs>
     </svg>
 
+    <form class="phone" id="phoneForm" novalidate>
+      <label for="phone">No. telefon akaun anda</label>
+      <input id="phone" type="tel" inputmode="numeric" autocomplete="tel" placeholder="Contoh: 0123456789" maxlength="13">
+      <p class="phone-err" id="phoneErr" role="alert"></p>
+    </form>
+
     <section class="stage" id="stage" aria-label="Pilih satu telur">
       <div class="tree left" aria-hidden="true">🎄</div>
       <div class="tree right" aria-hidden="true">🎄</div>
@@ -57,6 +63,8 @@
         <button class="egg" type="button" data-i="0" aria-label="Pecahkan telur 1"></button>
         <button class="egg" type="button" data-i="1" aria-label="Pecahkan telur 2"></button>
         <button class="egg" type="button" data-i="2" aria-label="Pecahkan telur 3"></button>
+        <button class="egg" type="button" data-i="3" aria-label="Pecahkan telur 4"></button>
+        <button class="egg" type="button" data-i="4" aria-label="Pecahkan telur 5"></button>
       </div>
       <svg class="hammer" id="hammer" viewBox="0 0 120 120" aria-hidden="true">
         <rect x="52" y="40" width="12" height="74" rx="5" fill="#8b4a1c" stroke="#5a2d0c" stroke-width="2"/>
@@ -73,6 +81,7 @@
     <section class="claimed" id="claimed" hidden>
       <p>Anda sudah smash telur Krismas.</p>
       <p class="claimed-prize">Hadiah anda: <b id="claimedAmount"></b></p>
+      <p>No. telefon: <b id="claimedPhone"></b></p>
       <p>Kod tuntutan: <b id="claimedCode" class="code"></b></p>
       <a class="btn gold" id="claimedBtn" target="_blank" rel="noopener">CLAIM AT LIVE CHAT</a>
     </section>
@@ -82,10 +91,18 @@
       <a class="btn green" id="chatBtn" target="_blank" rel="noopener">LIVE CHAT</a>
     </div>
 
+    <section class="card winners" aria-labelledby="winnersTitle">
+      <h2 id="winnersTitle">🎁 Pemenang Terkini</h2>
+      <div class="win-head"><span>No. telefon</span><span>Hadiah</span></div>
+      <div class="win-window"><ul class="win-list" id="winList"></ul></div>
+      <p class="win-empty" id="winEmpty" hidden>Jadilah pemenang pertama hari ini!</p>
+    </section>
+
     <section class="card how">
       <h2>Cara main</h2>
       <ol>
-        <li>Pilih dan tekan <b>satu</b> telur emas.</li>
+        <li>Masukkan nombor telefon akaun anda.</li>
+        <li>Pilih dan tekan <b>satu</b> daripada 5 telur emas.</li>
         <li>Lihat hadiah free kredit anda, dari <b>RM1 hingga RM15</b>.</li>
         <li>Screenshot kod tuntutan, kemudian tekan <b>Claim at Live Chat</b> dan hantar kod kepada staf kami.</li>
       </ol>
@@ -122,6 +139,7 @@
       <h2 id="modalTitle">Anda menang</h2>
       <p class="prize" id="prize">RM0</p>
       <p class="modal-sub">Free Kredit Krismas</p>
+      <p class="code-line">No. telefon: <b id="modalPhone"></b></p>
       <p class="code-line">Kod tuntutan: <b id="code" class="code"></b></p>
       <p class="hint">Screenshot skrin ini dan hantar kod kepada Live Chat untuk tuntut.</p>
       <a class="btn gold" id="claimBtn" target="_blank" rel="noopener">CLAIM AT LIVE CHAT</a>
@@ -132,6 +150,7 @@
   <div class="fx" id="fx" aria-hidden="true"></div>
 
   <script src="config.js"></script>
+  <script src="winners.js"></script>
   <script src="game.js"></script>
 </body>
 </html>

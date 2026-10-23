@@ -44,7 +44,13 @@ h1 span { display: block; background: var(--gold-grad); -webkit-background-clip:
 .tree.left { left: -6px; }
 .tree.right { right: -6px; }
 .ground { position: absolute; left: 0; right: 0; bottom: 0; height: 40px; background: radial-gradient(70% 100% at 50% 100%, #fff 0%, #dfe9f7 60%, rgba(223, 233, 247, 0) 100%); }
-.eggs { position: relative; z-index: 2; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; padding: 0 22px; }
+/* 5 eggs: 2 on the first row, 3 on the second. */
+.eggs { position: relative; z-index: 2; display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); column-gap: 10px; row-gap: 14px; padding: 0 20px; }
+.egg { grid-column: span 2; }
+.egg:nth-child(1) { grid-column: 2 / 4; }
+.egg:nth-child(2) { grid-column: 4 / 6; }
+.egg:nth-child(4) { animation-delay: 1.2s; }
+.egg:nth-child(5) { animation-delay: 1.6s; }
 
 .egg { position: relative; display: block; width: 100%; aspect-ratio: 100 / 140; transition: transform .15s, opacity .4s, filter .4s; animation: float 2.6s ease-in-out infinite; }
 .egg:nth-child(2) { animation-delay: .4s; }
@@ -76,6 +82,31 @@ h1 span { display: block; background: var(--gold-grad); -webkit-background-clip:
 .hammer.show { opacity: 1; }
 .hammer.swing { animation: swing .4s ease-in; }
 @keyframes swing { 0% { transform: rotate(35deg); } 50% { transform: rotate(-35deg); } 60% { transform: rotate(-30deg); } 100% { transform: rotate(35deg); } }
+
+/* ---------- Phone field ---------- */
+.phone { margin-top: 16px; padding: 12px 14px; border-radius: 16px; background: var(--card); border: 1px solid var(--line); }
+.phone label { display: block; margin-bottom: 6px; font-size: 13px; font-weight: 800; color: var(--gold); }
+.phone input { width: 100%; padding: 12px 14px; border-radius: 12px; border: 2px solid rgba(255, 211, 77, .55); background: rgba(0, 0, 0, .3); color: #fff; font-size: 17px; font-weight: 700; letter-spacing: 1px; outline: none; }
+.phone input:focus { border-color: var(--gold); box-shadow: 0 0 0 3px rgba(255, 211, 77, .25); }
+.phone input:disabled { opacity: .75; }
+.phone-err { margin-top: 6px; font-size: 13px; color: #ffb3bd; }
+.phone-err:empty { display: none; }
+.phone.nudge { animation: nudge .35s; }
+@keyframes nudge { 25% { transform: translateX(-6px); } 75% { transform: translateX(6px); } }
+
+/* ---------- Recent winners ---------- */
+.win-head, .win-list li { display: flex; justify-content: space-between; align-items: center; padding: 8px 12px; }
+.win-head { font-size: 12px; font-weight: 800; color: var(--gold); border-bottom: 1px solid var(--line); }
+.win-window { max-height: 200px; overflow: hidden; }
+.win-window[hidden] { display: none; }
+.win-list { list-style: none; padding: 0; }
+.win-list li { margin: 0; border-bottom: 1px dashed rgba(255, 255, 255, .12); font-size: 15px; color: #fff; font-family: Consolas, "Segoe UI", monospace; }
+.win-list li b { color: var(--gold); font-size: 16px; }
+.win-list li.you { background: rgba(255, 211, 77, .15); border-radius: 10px; }
+.win-list em { margin-left: 6px; padding: 1px 8px; border-radius: 8px; background: var(--red); font-style: normal; font-size: 11px; font-family: "Segoe UI", Arial, sans-serif; }
+.win-list.scroll { animation: ticker linear infinite; }
+@keyframes ticker { to { transform: translateY(-50%); } }
+.win-empty { padding: 12px 0 2px; text-align: center; }
 
 .status { margin-top: 14px; text-align: center; font-size: 15px; font-weight: 700; }
 
