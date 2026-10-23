@@ -54,11 +54,15 @@
 
     <form class="phone" id="phoneForm" novalidate>
       <label for="phone">No. telefon akaun anda</label>
-      <input id="phone" type="tel" inputmode="numeric" autocomplete="tel" placeholder="Contoh: 0123456789" maxlength="13">
+      <div class="phone-row">
+        <input id="phone" type="tel" inputmode="numeric" autocomplete="tel" placeholder="Contoh: 0123456789" maxlength="13">
+        <button class="btn gold play" id="playBtn" type="submit">PLAY</button>
+      </div>
       <p class="phone-err" id="phoneErr" role="alert"></p>
     </form>
 
-    <section class="stage" id="stage" aria-label="Pilih satu telur">
+    <section class="stage locked" id="stage" aria-label="Pilih satu telur">
+      <div class="lock-note" id="lockNote">🔒 Masukkan nombor telefon dan tekan <b>PLAY</b></div>
       <div class="tree left" aria-hidden="true">🎄</div>
       <div class="tree right" aria-hidden="true">🎄</div>
       <div class="eggs" id="eggs">
@@ -78,7 +82,7 @@
       <div class="ground" aria-hidden="true"></div>
     </section>
 
-    <p class="status" id="status" role="status">👆 Tekan mana-mana telur untuk pecahkan!</p>
+    <p class="status" id="status" role="status">📱 Masukkan nombor telefon akaun anda untuk mula.</p>
 
     <section class="claimed" id="claimed" hidden>
       <p>Anda sudah smash telur Krismas.</p>
@@ -89,8 +93,7 @@
       <button class="other" type="button" id="otherNumber">Guna nombor telefon lain</button>
     </section>
 
-    <div class="actions">
-      <a class="btn red" id="registerBtn" target="_blank" rel="noopener">REGISTER</a>
+    <div class="actions single">
       <a class="btn green" id="chatBtn" target="_blank" rel="noopener">LIVE CHAT</a>
     </div>
 
@@ -104,7 +107,7 @@
     <section class="card how">
       <h2>Cara main</h2>
       <ol>
-        <li>Masukkan nombor telefon akaun anda.</li>
+        <li>Masukkan nombor telefon akaun anda dan tekan <b>PLAY</b>.</li>
         <li>Pilih dan tekan <b>satu</b> daripada 5 telur emas.</li>
         <li>Lihat hadiah free kredit anda, dari <b>RM1 hingga RM15</b>.</li>
         <li>Screenshot kod tuntutan, kemudian tekan <b>Claim at Live Chat</b> dan hantar kod kepada staf kami.</li>
@@ -116,7 +119,7 @@
       <ul>
         <li>Satu tuntutan sahaja bagi setiap pemain, nombor telefon dan akaun bank.</li>
         <li>Hadiah mesti dituntut melalui Live Chat dan akan disahkan oleh staf sebelum dikreditkan.</li>
-        <li>Pemain mesti mempunyai akaun berdaftar. Belum ada akaun? Tekan Register.</li>
+        <li>Pemain mesti mempunyai akaun berdaftar. Nombor tidak berdaftar? Hubungi Live Chat.</li>
         <li>Syarat turnover free kredit terpakai. Tanya Live Chat untuk butiran.</li>
         <li>Pihak pengurusan berhak membatalkan tuntutan yang disalah guna.</li>
         <li>18+ sahaja. Sila bermain secara bertanggungjawab.</li>

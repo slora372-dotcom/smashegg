@@ -7,8 +7,7 @@ window.GAME = {
   logo: "",
 
   // Where the buttons go.
-  claimUrl: "https://ppg668.cc/register.php?r=BMMTH",    // "Claim at Live Chat"
-  registerUrl: "https://ppg668.cc/register.php?r=BMMTH", // "Register"
+  claimUrl: "https://ggc365.space/", // "Live Chat" and "Claim at Live Chat"
 
   // Remembers the player's result on their phone.
   storageKey: "xmas-smash-egg-2026",

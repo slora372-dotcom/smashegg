@@ -20,7 +20,6 @@
   if (G.logo) $("brand").innerHTML = `<img src="${G.logo}" alt="${G.brandName || ""}">`;
   else if (G.brandName) $("brand").textContent = G.brandName;
   ["claimBtn", "claimedBtn", "chatBtn"].forEach((id) => ($(id).href = G.claimUrl));
-  $("registerBtn").href = G.registerUrl;
 
   // ---------- Eggs ----------
   const eggSvg = `
@@ -56,6 +55,7 @@
   }
   function demoApi(path, data) {
     if (path.includes("winners")) return { ok: true, winners: [] };
+    if (data.check) return { ok: true, status: "eligible" };
     const w = [16, 16, 14, 12, 10, 7, 6, 5, 4, 3, 2, 2, 1, 1, 1];
     let r = Math.random() * 100, amount = 1;
     for (let i = 0; i < w.length; i++) { if ((r -= w[i]) < 0) { amount = i + 1; break; } }
@@ -75,8 +75,51 @@
     return /^01\d{8,9}$/.test(d) ? d : "";
   };
   const mask = (last4) => "****" + last4;
-  $("phoneForm").addEventListener("submit", (e) => e.preventDefault());
-  $("phone").addEventListener("input", () => ($("phoneErr").textContent = ""));
+  // ---------- PLAY: eggs unlock only for numbers in the player list ----------
+  let verified = "";
+  function lockEggs() {
+    verified = "";
+    $("stage").classList.add("locked");
+    $("lockNote").hidden = false;
+    eggs.forEach((b) => (b.disabled = true));
+  }
+  function unlockEggs(phone) {
+    verified = phone;
+    $("stage").classList.remove("locked");
+    $("lockNote").hidden = true;
+    eggs.forEach((b) => (b.disabled = false));
+    $("status").textContent = "✅ Nombor disahkan! Pilih dan tekan satu telur.";
+  }
+
+  $("phoneForm").addEventListener("submit", async (e) => {
+    e.preventDefault();
+    if (busy || load()) return;
+    const phone = cleanPhone($("phone").value);
+    if (!phone) return phoneError(MESSAGES.invalid_phone);
+    $("playBtn").disabled = true;
+    $("playBtn").textContent = "...";
+    const out = await api("/api/play", { phone, check: true }).catch(() => ({ ok: false, error: "server_error" }));
+    $("playBtn").disabled = false;
+    $("playBtn").textContent = "PLAY";
+    if (!out.ok) return phoneError(MESSAGES[out.error] || MESSAGES.server_error);
+    if (out.status === "not_found") return phoneError(MESSAGES.not_found);
+    if (out.status === "claimed") {
+      const data = { ...out.claim, phone };
+      save(data);
+      showClaimed(data);
+      $("status").textContent = "⚠️ Nombor ini sudah bermain. Tuntut hadiah anda di Live Chat.";
+      return;
+    }
+    unlockEggs(phone);
+    $("stage").scrollIntoView({ behavior: reduceMotion ? "auto" : "smooth", block: "center" });
+  });
+  $("phone").addEventListener("input", () => {
+    $("phoneErr").textContent = "";
+    if (verified && cleanPhone($("phone").value) !== verified) {
+      lockEggs();
+      $("status").textContent = "📱 Tekan PLAY untuk sahkan nombor baharu.";
+    }
+  });
 
   // ---------- Recent winners list (from the server) ----------
   let winners = [];
@@ -114,6 +157,9 @@
     $("claimedPhone").textContent = data.phone || "-";
     $("phone").value = data.phone || "";
     $("phone").disabled = true;
+    $("playBtn").disabled = true;
+    $("stage").classList.remove("locked");
+    $("lockNote").hidden = true;
     mine = data.phone ? data : null;
     renderWinners();
     $("claimed").hidden = false;
@@ -201,16 +247,18 @@
       b.classList.remove("faded", "picked", "shake", "crack1", "crack2", "crack3", "broken");
     });
     $("phone").disabled = false;
-    $("status").textContent = "👆 Tekan mana-mana telur untuk pecahkan!";
+    $("playBtn").disabled = false;
+    lockEggs();
+    $("status").textContent = "📱 Masukkan nombor telefon akaun anda untuk mula.";
   }
 
   async function smash(egg) {
-    if (busy || load()) return;
-    const phone = cleanPhone($("phone").value);
-    if (!phone) return phoneError(MESSAGES.invalid_phone);
+    if (busy || load() || !verified) return;
+    const phone = verified;
     busy = true;
     const i = +egg.dataset.i;
     $("phone").disabled = true;
+    $("playBtn").disabled = true;
     eggs.forEach((b) => { b.disabled = true; if (b !== egg) b.classList.add("faded"); });
     egg.classList.add("picked");
     $("status").textContent = "🔨 Smash! Smash! Smash!";
@@ -263,7 +311,7 @@
 
   const saved = load();
   if (saved) showClaimed(saved);
-  else renderWinners();
+  else { lockEggs(); renderWinners(); }
   loadWinners();
   setInterval(loadWinners, 30000);
 

@@ -163,3 +163,15 @@ h1 span { display: block; background: var(--gold-grad); -webkit-background-clip:
 .demo { margin-top: 12px; padding: 8px 12px; border-radius: 10px; background: #ffd34d; color: #5a2d00; font-size: 12.5px; font-weight: 800; text-align: center; }
 .demo[hidden] { display: none; }
 .other { margin-top: 4px; padding: 6px; font-size: 13px; color: var(--muted); text-decoration: underline; }
+
+/* ---------- PLAY button and locked eggs ---------- */
+.phone-row { display: flex; gap: 8px; }
+.phone-row input { flex: 1; min-width: 0; }
+.btn.play { flex-shrink: 0; padding: 12px 22px; font-size: 17px; }
+.btn.play:disabled { opacity: .6; }
+.stage.locked .eggs { filter: grayscale(.5) brightness(.75); }
+.stage.locked .egg { animation: none; }
+.lock-note { position: absolute; z-index: 4; left: 50%; top: 50%; transform: translate(-50%, -50%); width: max-content; max-width: 86%; padding: 10px 16px; border-radius: 14px; background: rgba(4, 10, 24, .82); border: 1px solid rgba(255, 211, 77, .6); text-align: center; font-size: 14px; font-weight: 700; }
+.lock-note b { color: var(--gold); }
+.lock-note[hidden] { display: none; }
+.actions.single { grid-template-columns: 1fr; }
