@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="ms">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex, nofollow">
+  <title>Smash Egg Admin</title>
+  <style>
+    :root { --bg: #0f172a; --card: #1e293b; --line: #334155; --text: #e2e8f0; --muted: #94a3b8; --gold: #fbbf24; --red: #ef4444; --green: #22c55e; }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: "Segoe UI", Arial, sans-serif; background: var(--bg); color: var(--text); font-size: 14px; }
+    .wrap { max-width: 960px; margin: 0 auto; padding: 20px 16px 60px; }
+    h1 { font-size: 22px; margin-bottom: 4px; }
+    h2 { font-size: 16px; margin-bottom: 10px; color: var(--gold); }
+    .muted { color: var(--muted); }
+    .card { margin-top: 16px; padding: 16px; border-radius: 12px; background: var(--card); border: 1px solid var(--line); }
+    input, textarea { width: 100%; padding: 10px 12px; border-radius: 8px; border: 1px solid var(--line); background: #0b1222; color: var(--text); font: inherit; }
+    textarea { min-height: 120px; resize: vertical; font-family: Consolas, monospace; }
+    button { padding: 10px 16px; border-radius: 8px; border: 0; background: var(--gold); color: #1a1200; font: inherit; font-weight: 700; cursor: pointer; }
+    button.ghost { background: transparent; color: var(--text); border: 1px solid var(--line); }
+    button.danger { background: var(--red); color: #fff; }
+    button:disabled { opacity: .5; cursor: default; }
+    .row { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; margin-top: 10px; }
+    .row > input { flex: 1; min-width: 180px; }
+    .stats { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; }
+    .stat { padding: 14px; border-radius: 10px; background: #0b1222; border: 1px solid var(--line); }
+    .stat b { display: block; font-size: 24px; margin-top: 4px; }
+    .msg { margin-top: 10px; min-height: 18px; }
+    .ok { color: var(--green); } .err { color: #fca5a5; }
+    table { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 13px; }
+    th, td { padding: 8px; border-bottom: 1px solid var(--line); text-align: left; white-space: nowrap; }
+    th { color: var(--muted); font-weight: 600; }
+    .table-wrap { max-height: 420px; overflow: auto; }
+    [hidden] { display: none !important; }
+    @media (max-width: 560px) { .stats { grid-template-columns: 1fr; } }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <h1>🎄 Smash Egg Admin</h1>
+    <p class="muted">Urus senarai pemain dan lihat semua tuntutan.</p>
+
+    <!-- Login -->
+    <section class="card" id="login">
+      <h2>Log masuk</h2>
+      <form id="loginForm" class="row">
+        <input id="password" type="password" placeholder="Kata laluan admin" autocomplete="current-password">
+        <button type="submit">Masuk</button>
+      </form>
+      <p class="msg err" id="loginMsg"></p>
+    </section>
+
+    <div id="panel" hidden>
+      <section class="card">
+        <div class="row" style="justify-content:space-between;margin-top:0">
+          <h2 style="margin:0">Ringkasan</h2>
+          <div class="row" style="margin:0"><button class="ghost" id="refresh">Muat semula</button><button class="ghost" id="logout">Log keluar</button></div>
+        </div>
+        <div class="stats" style="margin-top:12px">
+          <div class="stat"><span class="muted">Pemain berdaftar</span><b id="sPlayers">–</b></div>
+          <div class="stat"><span class="muted">Sudah tuntut</span><b id="sClaims">–</b></div>
+          <div class="stat"><span class="muted">Jumlah hadiah</span><b id="sTotal">–</b></div>
+        </div>
+      </section>
+
+      <section class="card">
+        <h2>Tambah nombor pemain</h2>
+        <p class="muted">Tampal nombor (satu setiap baris), atau pilih fail CSV / TXT. Jika fail ada lajur "Phone", hanya lajur itu digunakan. Nombor yang sudah ada tidak akan berganda.</p>
+        <textarea id="paste" placeholder="0123456789&#10;0177666674&#10;..."></textarea>
+        <div class="row">
+          <input id="file" type="file" accept=".csv,.txt,text/csv,text/plain" style="flex:1">
+          <button id="addBtn" disabled>Tambah</button>
+        </div>
+        <p class="msg muted" id="addInfo"></p>
+      </section>
+
+      <section class="card">
+        <h2>Cari nombor</h2>
+        <form id="lookupForm" class="row">
+          <input id="lookupPhone" placeholder="0123456789" inputmode="numeric">
+          <button type="submit">Cari</button>
+        </form>
+        <div id="lookupResult" class="msg"></div>
+        <div class="row" id="lookupActions" hidden>
+          <button class="ghost" id="resetBtn">Benarkan main semula</button>
+          <button class="danger" id="removeBtn">Buang dari senarai pemain</button>
+        </div>
+      </section>
+
+      <section class="card">
+        <div class="row" style="justify-content:space-between;margin-top:0">
+          <h2 style="margin:0">Semua tuntutan</h2>
+          <div class="row" style="margin:0"><button class="ghost" id="loadClaims">Papar</button><button class="ghost" id="downloadClaims">Muat turun CSV</button></div>
+        </div>
+        <div class="table-wrap"><table id="claimsTable" hidden>
+          <thead><tr><th>Masa</th><th>No. telefon</th><th>Hadiah</th><th>Kod</th></tr></thead>
+          <tbody></tbody>
+        </table></div>
+        <p class="msg muted" id="claimsInfo"></p>
+      </section>
+
+      <section class="card">
+        <h2 style="color:#fca5a5">Kosongkan senarai pemain</h2>
+        <p class="muted">Buang SEMUA nombor pemain (tuntutan yang sudah dibuat tidak dipadam). Taip DELETE untuk sahkan.</p>
+        <div class="row">
+          <input id="confirmDelete" placeholder="DELETE">
+          <button class="danger" id="clearBtn">Kosongkan</button>
+        </div>
+        <p class="msg" id="clearMsg"></p>
+      </section>
+    </div>
+  </div>
+  <script src="admin.js"></script>
+</body>
+</html>

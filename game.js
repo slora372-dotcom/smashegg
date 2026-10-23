@@ -3,7 +3,7 @@
   const $ = (id) => document.getElementById(id);
   const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
-  // ---------- Saved result (one claim per player on this device) ----------
+  // ---------- Saved result on this phone (the server is the real check) ----------
   const load = () => {
     try { return JSON.parse(localStorage.getItem(G.storageKey)); } catch (e) { return null; }
   };
@@ -37,18 +37,32 @@
   const eggs = [...document.querySelectorAll(".egg")];
   eggs.forEach((b) => (b.innerHTML = eggSvg));
 
-  const pickPrize = () => {
-    const total = G.prizes.reduce((s, p) => s + p.weight, 0);
-    let r = Math.random() * total;
-    for (const p of G.prizes) { if ((r -= p.weight) < 0) return p.amount; }
-    return G.prizes[0].amount;
-  };
-  const makeCode = () => {
-    const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
-    let s = "XM-";
-    for (let i = 0; i < 6; i++) s += chars[Math.floor(Math.random() * chars.length)];
-    return s;
-  };
+  // ---------- Server ----------
+  // Opened straight from a file on the computer there is no server, so the
+  // page runs a preview: any valid number can play and nothing is saved.
+  const DEMO = location.protocol === "file:";
+  if (DEMO) $("demo").hidden = false;
+
+  async function api(path, data) {
+    if (DEMO) return demoApi(path, data);
+    const r = await fetch(path, {
+      method: data ? "POST" : "GET",
+      headers: { "Content-Type": "application/json" },
+      body: data ? JSON.stringify(data) : undefined,
+    });
+    const out = await r.json().catch(() => ({ ok: false, error: "server_error" }));
+    if (r.status === 429) out.error = "too_many";
+    return out;
+  }
+  function demoApi(path, data) {
+    if (path.includes("winners")) return { ok: true, winners: [] };
+    const w = [16, 16, 14, 12, 10, 7, 6, 5, 4, 3, 2, 2, 1, 1, 1];
+    let r = Math.random() * 100, amount = 1;
+    for (let i = 0; i < w.length; i++) { if ((r -= w[i]) < 0) { amount = i + 1; break; } }
+    const code = "XM-DEMO" + Math.floor(Math.random() * 90 + 10);
+    return { ok: true, status: "won", claim: { amount, code, egg: data.egg, at: new Date().toISOString() } };
+  }
+
   const wait = (ms) => new Promise((r) => setTimeout(r, reduceMotion ? Math.min(ms, 120) : ms));
 
   let busy = false;
@@ -64,10 +78,23 @@
   $("phoneForm").addEventListener("submit", (e) => e.preventDefault());
   $("phone").addEventListener("input", () => ($("phoneErr").textContent = ""));
 
-  // ---------- Recent winners list ----------
-  function renderWinners(own) {
-    const rows = (window.RECENT_CLAIMS || []).slice(0, 30).map((w) => ({ ...w, you: false }));
-    if (own) rows.unshift({ phone: own.phone.slice(-4), amount: own.amount, you: true });
+  // ---------- Recent winners list (from the server) ----------
+  let winners = [];
+  let mine = null;
+  async function loadWinners() {
+    try {
+      const out = await api("/api/winners");
+      if (out.ok) { winners = out.winners; renderWinners(); }
+    } catch (e) {}
+  }
+  function renderWinners() {
+    const rows = winners.map((w) => ({
+      ...w,
+      you: !!mine && w.at === mine.at && String(w.phone) === mine.phone.slice(-4),
+    }));
+    if (mine && mine.phone && !rows.some((w) => w.you)) {
+      rows.unshift({ phone: mine.phone.slice(-4), amount: mine.amount, you: true });
+    }
     const html = rows.map((w) =>
       `<li${w.you ? ' class="you"' : ""}><span>${mask(String(w.phone).slice(-4))}${w.you ? ' <em>Anda</em>' : ""}</span><b>RM${Number(w.amount)}</b></li>`
     ).join("");
@@ -87,7 +114,8 @@
     $("claimedPhone").textContent = data.phone || "-";
     $("phone").value = data.phone || "";
     $("phone").disabled = true;
-    renderWinners(data.phone ? data : null);
+    mine = data.phone ? data : null;
+    renderWinners();
     $("claimed").hidden = false;
     $("status").textContent = "✅ Anda sudah smash. Tuntut hadiah anda di Live Chat.";
     eggs.forEach((b, i) => {
@@ -104,6 +132,11 @@
     $("modal").hidden = false;
     $("claimBtn").focus();
   }
+  // Lets another player on the same phone enter their own number.
+  $("otherNumber").addEventListener("click", () => {
+    try { localStorage.removeItem(G.storageKey); } catch (e) {}
+    location.reload();
+  });
   $("closeModal").addEventListener("click", () => ($("modal").hidden = true));
   $("modal").addEventListener("click", (e) => { if (e.target === $("modal")) $("modal").hidden = true; });
   document.addEventListener("keydown", (e) => { if (e.key === "Escape") $("modal").hidden = true; });
@@ -146,40 +179,83 @@
     setTimeout(() => tag.remove(), 1600);
   }
 
+  function phoneError(msg) {
+    $("phoneErr").textContent = msg;
+    $("phone").focus();
+    $("phoneForm").classList.remove("nudge"); void $("phoneForm").offsetWidth; $("phoneForm").classList.add("nudge");
+  }
+
+  const MESSAGES = {
+    not_found: "Nombor ini tidak berdaftar untuk event ini. Sila hubungi Live Chat.",
+    invalid_phone: "Sila masukkan nombor telefon yang sah (contoh: 0123456789).",
+    too_many: "Terlalu banyak cubaan. Sila cuba lagi selepas 10 minit.",
+    db_not_connected: "Sistem belum sedia. Sila hubungi Live Chat.",
+    server_error: "Ralat sambungan. Sila cuba lagi.",
+  };
+
+  // Puts the eggs back as they were when the server says no.
+  function resetEggs() {
+    $("hammer").classList.remove("show", "swing");
+    eggs.forEach((b) => {
+      b.disabled = false;
+      b.classList.remove("faded", "picked", "shake", "crack1", "crack2", "crack3", "broken");
+    });
+    $("phone").disabled = false;
+    $("status").textContent = "👆 Tekan mana-mana telur untuk pecahkan!";
+  }
+
   async function smash(egg) {
     if (busy || load()) return;
     const phone = cleanPhone($("phone").value);
-    if (!phone) {
-      $("phoneErr").textContent = "Sila masukkan nombor telefon yang sah dahulu (contoh: 0123456789).";
-      $("phone").focus();
-      $("phoneForm").classList.remove("nudge"); void $("phoneForm").offsetWidth; $("phoneForm").classList.add("nudge");
-      return;
-    }
+    if (!phone) return phoneError(MESSAGES.invalid_phone);
     busy = true;
     const i = +egg.dataset.i;
-    const data = { amount: pickPrize(), code: makeCode(), egg: i, phone, at: new Date().toISOString() };
     $("phone").disabled = true;
-    save(data); // saved first, so refreshing mid-animation cannot give a second try
-
     eggs.forEach((b) => { b.disabled = true; if (b !== egg) b.classList.add("faded"); });
     egg.classList.add("picked");
     $("status").textContent = "🔨 Smash! Smash! Smash!";
     placeHammer(egg);
 
-    for (let hit = 1; hit <= 3; hit++) {
+    // Ask the server while the hammer swings.
+    const request = api("/api/play", { phone, egg: i }).catch(() => ({ ok: false, error: "server_error" }));
+    const hit = async (n) => {
       const h = $("hammer");
       h.classList.remove("swing"); void h.offsetWidth; h.classList.add("swing");
       await wait(220);
-      egg.classList.remove("shake"); void egg.offsetWidth; egg.classList.add("shake", "crack" + hit);
+      egg.classList.remove("shake"); void egg.offsetWidth; egg.classList.add("shake", "crack" + n);
       if (navigator.vibrate) navigator.vibrate(30);
       await wait(260);
+    };
+    await hit(1);
+    await hit(2);
+    const out = await request;
+
+    if (!out.ok || out.status === "not_found") {
+      resetEggs();
+      busy = false;
+      return phoneError(MESSAGES[out.ok ? "not_found" : out.error] || MESSAGES.server_error);
     }
+
+    const data = { ...out.claim, phone };
+    if (out.status === "claimed") {
+      // This number already played: show the prize it won before.
+      resetEggs();
+      save(data);
+      showClaimed(data);
+      $("status").textContent = "⚠️ Nombor ini sudah bermain. Tuntut hadiah anda di Live Chat.";
+      busy = false;
+      return;
+    }
+
+    save(data);
+    await hit(3);
     $("hammer").classList.remove("show", "swing");
     egg.classList.add("broken");
     burst(egg, data.amount);
     await wait(900);
     openModal(data);
     showClaimed(data);
+    loadWinners();
     busy = false;
   }
 
@@ -187,7 +263,9 @@
 
   const saved = load();
   if (saved) showClaimed(saved);
-  else renderWinners(null);
+  else renderWinners();
+  loadWinners();
+  setInterval(loadWinners, 30000);
 
   // ---------- Falling snow ----------
   const canvas = $("snow");

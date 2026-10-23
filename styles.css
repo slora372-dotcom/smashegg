@@ -159,3 +159,7 @@ h1 span { display: block; background: var(--gold-grad); -webkit-background-clip:
   .egg, .egg.shake, .egg.broken::after { animation: none; }
   .half, .crack { transition: none; }
 }
+
+.demo { margin-top: 12px; padding: 8px 12px; border-radius: 10px; background: #ffd34d; color: #5a2d00; font-size: 12.5px; font-weight: 800; text-align: center; }
+.demo[hidden] { display: none; }
+.other { margin-top: 4px; padding: 6px; font-size: 13px; color: var(--muted); text-decoration: underline; }
