@@ -66,7 +66,7 @@
     allBrands = me.allBrands || [];
     const mine = me.brands || [];
     if (!mine.some((x) => x.key === brand)) brand = mine.length ? mine[0].key : "ggc";
-    $("brandSel").innerHTML = mine.map((x) => `<option value="${esc(x.key)}">${esc(x.name)} · /smashegg/${esc(x.key)}</option>`).join("");
+    $("brandSel").innerHTML = mine.map((x) => `<option value="${esc(x.key)}">${esc(x.name)}</option>`).join("");
     $("brandSel").value = brand;
     $("brandSel").disabled = mine.length < 2;
     showBrand();

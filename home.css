@@ -103,3 +103,6 @@ button.game { width: 100%; font: inherit; color: inherit; text-align: left; curs
 .pick.ggc { background: linear-gradient(180deg, #2fae66, #16733f); }
 .pick.ppg { background: linear-gradient(180deg, #ff4a5f, #a50d22); }
 @media (prefers-reduced-motion: reduce) { .picker-box { animation: none; } }
+.art.claw { background: radial-gradient(70% 70% at 50% 35%, #3a2585, #160d3a); }
+.art.claw svg { width: 46%; height: auto; filter: drop-shadow(0 6px 10px rgba(0, 0, 0, .45)) drop-shadow(0 0 14px rgba(51, 214, 196, .35)); animation: bob 2.6s ease-in-out infinite; }
+@media (prefers-reduced-motion: reduce) { .art.claw svg { animation: none; } }

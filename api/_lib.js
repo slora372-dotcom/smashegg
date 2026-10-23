@@ -3,22 +3,29 @@
 
 const crypto = require("crypto");
 
-// Each brand link (/smashegg/<brand>) has its own player list, claims and stats.
-// To add a brand: add a line here, in config.js, and copy the smashegg/ggc folder.
-// GGC keeps the original "xmas26:" data so nothing already uploaded is lost.
-const BRANDS = {
-  ggc: { name: "GGC", ns: "xmas26:" },
-  ppg: { name: "PPG", ns: "xmas26:ppg:" },
-};
-const NS = BRANDS.ggc.ns;
-const brandOf = (v) => (Object.prototype.hasOwnProperty.call(BRANDS, v) ? v : "");
-
-// Prizes RM1 to RM15. Higher weight = more likely. Weights add up to 100.
+// ---------- Prizes: [amount RM, weight]. Higher weight = more likely. ----------
+// Smash Egg: RM1 to RM15, weights add up to 100.
 const PRIZES = [
   [1, 16], [2, 16], [3, 14], [4, 12], [5, 10],
   [6, 7], [7, 6], [8, 5], [9, 4], [10, 3],
   [11, 2], [12, 2], [13, 1], [14, 1], [15, 1],
 ];
+// Treasure Claw Tier 1, weights add up to 1000:
+// RM1 55% · RM2 30% · RM5 12% · RM10 2.5% · RM25 0.5%
+const CLAW_PRIZES = [[1, 550], [2, 300], [5, 120], [10, 25], [25, 5]];
+
+// Each game link has its own player list, claims and stats (one "campaign" each).
+//   ggc / ppg : Christmas Smash Egg at /smashegg/<key>
+//   clawggc   : Treasure Claw at /claw/ggc
+// To add one: add a line here and in the page's config, and copy its folder.
+// GGC Smash Egg keeps the original "xmas26:" data so nothing uploaded is lost.
+const BRANDS = {
+  ggc: { name: "Smash Egg · GGC", path: "/smashegg/ggc", ns: "xmas26:", prizes: PRIZES, codePrefix: "XM-" },
+  ppg: { name: "Smash Egg · PPG", path: "/smashegg/ppg", ns: "xmas26:ppg:", prizes: PRIZES, codePrefix: "XM-" },
+  clawggc: { name: "Treasure Claw · GGC", path: "/claw/ggc", ns: "claw26:ggc:", prizes: CLAW_PRIZES, codePrefix: "TC-" },
+};
+const NS = BRANDS.ggc.ns;
+const brandOf = (v) => (Object.prototype.hasOwnProperty.call(BRANDS, v) ? v : "");
 
 function keysFor(brand) {
   const ns = BRANDS[brand].ns;
@@ -61,16 +68,16 @@ function cleanPhone(v) {
   return /^01\d{8,9}$/.test(d) ? d : "";
 }
 
-function pickPrize() {
-  const total = PRIZES.reduce((s, p) => s + p[1], 0);
+function pickPrize(prizes = PRIZES) {
+  const total = prizes.reduce((s, p) => s + p[1], 0);
   let r = crypto.randomInt(total);
-  for (const [amount, w] of PRIZES) { if ((r -= w) < 0) return amount; }
-  return PRIZES[0][0];
+  for (const [amount, w] of prizes) { if ((r -= w) < 0) return amount; }
+  return prizes[0][0];
 }
 
-function makeCode() {
+function makeCode(prefix = "XM-") {
   const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
-  let s = "XM-";
+  let s = prefix;
   for (let i = 0; i < 6; i++) s += chars[crypto.randomInt(chars.length)];
   return s;
 }

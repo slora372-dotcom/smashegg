@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="ms">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Treasure Claw – Tangkap Peti Harta, Menang Sehingga RM25</title>
+  <meta name="description" content="Main Treasure Claw: gerakkan cakar, tangkap satu peti harta karun dan menang free kredit sehingga RM25. Satu tuntutan bagi setiap pemain.">
+  <meta name="robots" content="index, follow">
+  <link rel="canonical" href="https://www.minigame68.store/claw/ggc">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="Treasure Claw – Menang Sehingga RM25">
+  <meta property="og:description" content="Tangkap peti harta karun dan menang free kredit sehingga RM25.">
+  <meta name="theme-color" content="#1a0f3d">
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 80'%3E%3Crect x='6' y='34' width='88' height='42' rx='6' fill='%23a5551f'/%3E%3Cpath d='M6 38C6 14 94 14 94 38z' fill='%23c46a2a'/%3E%3Crect x='6' y='34' width='88' height='8' fill='%23ffd34d'/%3E%3Crect x='42' y='38' width='16' height='18' rx='3' fill='%23ffd34d'/%3E%3C/svg%3E">
+  <link rel="stylesheet" href="/styles.css">
+  <link rel="stylesheet" href="/claw.css">
+</head>
+<body class="claw-page">
+  <main class="app">
+    <header class="top">
+      <a class="back" href="/">← Semua mini game</a>
+      <p class="kicker">💎 MINI GAME BAHARU 💎</p>
+      <h1>Treasure <span>Claw</span></h1>
+      <p class="sub">Tangkap <b>1 peti harta</b> dan menang <b>Free Kredit sehingga RM25</b>!</p>
+    </header>
+
+    <form class="phone" id="phoneForm" novalidate>
+      <label for="phone">No. telefon akaun anda</label>
+      <div class="phone-row">
+        <input id="phone" type="tel" inputmode="numeric" autocomplete="tel" placeholder="Contoh: 60123456789" maxlength="16">
+        <button class="btn gold play" id="playBtn" type="submit">PLAY</button>
+      </div>
+      <p class="phone-err" id="phoneErr" role="alert"></p>
+    </form>
+
+    <!-- Shared chest drawing -->
+    <svg width="0" height="0" class="defs" aria-hidden="true">
+      <defs>
+        <linearGradient id="wood" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#c46a2a"/><stop offset="1" stop-color="#7a3a12"/></linearGradient>
+        <linearGradient id="trim" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fff2a8"/><stop offset=".5" stop-color="#ffc928"/><stop offset="1" stop-color="#b37400"/></linearGradient>
+        <linearGradient id="steel" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#8d96a8"/><stop offset=".45" stop-color="#f1f4f9"/><stop offset="1" stop-color="#7a8395"/></linearGradient>
+        <g id="chestBody">
+          <rect x="6" y="38" width="88" height="38" rx="5" fill="url(#wood)" stroke="#4a2008" stroke-width="2"/>
+          <rect x="6" y="38" width="88" height="7" fill="url(#trim)"/>
+          <rect x="6" y="69" width="88" height="7" rx="3" fill="url(#trim)"/>
+          <rect x="16" y="38" width="7" height="38" fill="url(#trim)"/>
+          <rect x="77" y="38" width="7" height="38" fill="url(#trim)"/>
+          <rect x="41" y="40" width="18" height="20" rx="3" fill="url(#trim)" stroke="#7a4a00" stroke-width="1.5"/>
+          <circle cx="50" cy="48" r="2.6" fill="#4a2008"/><rect x="49" y="49" width="2" height="6" fill="#4a2008"/>
+        </g>
+        <g id="chestLid">
+          <path d="M6 40C6 14 94 14 94 40z" fill="url(#wood)" stroke="#4a2008" stroke-width="2"/>
+          <path d="M16 39C16 20 23 18 23 18V39zM77 18s7 2 7 21h-7z" fill="url(#trim)"/>
+          <path d="M6 40C6 34 94 34 94 40z" fill="url(#trim)"/>
+        </g>
+      </defs>
+    </svg>
+
+    <section class="machine" aria-label="Mesin Treasure Claw">
+      <div class="sign">TREASURE CLAW</div>
+      <div class="glass locked" id="glass">
+        <div class="lights" aria-hidden="true"></div>
+        <div class="rail" aria-hidden="true"></div>
+        <div class="carriage" id="carriage" aria-hidden="true">
+          <div class="trolley"></div>
+          <div class="rope" id="rope"></div>
+          <svg class="claw" id="claw" viewBox="0 0 80 72">
+            <rect x="24" y="0" width="32" height="16" rx="4" fill="url(#trim)" stroke="#7a4a00" stroke-width="1.5"/>
+            <circle cx="40" cy="8" r="4" fill="#33d6c4" stroke="#0b5f56" stroke-width="1.5"/>
+            <g class="prong left"><path d="M32 14C14 22 8 44 18 66l5-2C16 46 20 28 36 20z" fill="url(#steel)" stroke="#4b5363" stroke-width="1.5"/></g>
+            <g class="prong right"><path d="M48 14c18 8 24 30 14 52l-5-2c7-18 3-36-13-44z" fill="url(#steel)" stroke="#4b5363" stroke-width="1.5"/></g>
+          </svg>
+        </div>
+        <div class="chests" id="chests">
+          <div class="chest" data-i="0"></div>
+          <div class="chest" data-i="1"></div>
+          <div class="chest" data-i="2"></div>
+          <div class="chest" data-i="3"></div>
+          <div class="chest" data-i="4"></div>
+        </div>
+        <div class="lock-note" id="lockNote">🔒 Masukkan nombor telefon dan tekan <b>PLAY</b></div>
+        <div class="countdown" id="countdown" hidden></div>
+      </div>
+      <button class="btn gold drop" id="dropBtn" type="button" disabled>⬇ DROP</button>
+    </section>
+
+    <p class="status" id="status" role="status">📱 Masukkan nombor telefon akaun anda untuk mula.</p>
+
+    <section class="claimed" id="claimed" hidden>
+      <p>Anda sudah main Treasure Claw.</p>
+      <p class="claimed-prize">Hadiah anda: <b id="claimedAmount"></b></p>
+      <p>No. telefon: <b id="claimedPhone"></b></p>
+      <p>Kod tuntutan: <b id="claimedCode" class="code"></b></p>
+      <a class="btn gold" id="claimedBtn" target="_blank" rel="noopener">CLAIM AT LIVE CHAT</a>
+      <button class="other" type="button" id="otherNumber">Guna nombor telefon lain</button>
+    </section>
+
+    <div class="actions single">
+      <a class="btn green" id="chatBtn" target="_blank" rel="noopener">LIVE CHAT</a>
+    </div>
+
+    <section class="card winners" aria-labelledby="winnersTitle">
+      <h2 id="winnersTitle">💎 Pemenang Terkini</h2>
+      <div class="win-head"><span>No. telefon</span><span>Hadiah</span></div>
+      <div class="win-window"><ul class="win-list" id="winList"></ul></div>
+      <p class="win-empty" id="winEmpty" hidden>Jadilah pemenang pertama hari ini!</p>
+    </section>
+
+    <section class="card how">
+      <h2>Cara main</h2>
+      <ol>
+        <li>Masukkan nombor telefon akaun anda dan tekan <b>PLAY</b>.</li>
+        <li>Cakar akan bergerak ke kiri dan kanan. Tekan <b>DROP</b> (atau tekan mesin) untuk jatuhkan cakar ke atas peti.</li>
+        <li>Jika anda tidak tekan dalam 10 saat, cakar akan jatuh sendiri.</li>
+        <li>Buka peti dan lihat hadiah anda. Screenshot kod tuntutan, kemudian tekan <b>Claim at Live Chat</b>.</li>
+      </ol>
+    </section>
+
+    <section class="card rewards">
+      <h2>Hadiah dalam peti</h2>
+      <div class="chips"><span>RM1</span><span>RM2</span><span>RM5</span><span>RM10</span><span>RM25</span></div>
+      <p>Setiap peti menyimpan hadiah yang dipilih secara rawak oleh sistem. Semua peti mempunyai peluang yang sama, jadi tidak kira peti mana yang anda tangkap.</p>
+    </section>
+
+    <section class="card terms">
+      <h2>Terma &amp; syarat</h2>
+      <ul>
+        <li>Satu tuntutan sahaja bagi setiap pemain, nombor telefon dan akaun bank.</li>
+        <li>Hadiah mesti dituntut melalui Live Chat dan akan disahkan oleh staf sebelum dikreditkan.</li>
+        <li>Pemain mesti mempunyai akaun berdaftar. Nombor tidak berdaftar? Hubungi Live Chat.</li>
+        <li>Syarat turnover free kredit terpakai. Tanya Live Chat untuk butiran.</li>
+        <li>Pihak pengurusan berhak meminda atau membatalkan promosi ini pada bila-bila masa.</li>
+        <li>18+ sahaja. Sila bermain secara bertanggungjawab.</li>
+      </ul>
+    </section>
+
+    <footer class="foot">18+ sahaja · Main secara bertanggungjawab</footer>
+  </main>
+
+  <!-- Prize pop-up -->
+  <div class="modal" id="modal" hidden>
+    <div class="modal-box" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
+      <p class="modal-kicker">🎉 TAHNIAH! 🎉</p>
+      <h2 id="modalTitle">Peti anda mengandungi</h2>
+      <p class="prize" id="prize">RM0</p>
+      <p class="modal-sub">Free Kredit</p>
+      <p class="code-line">No. telefon: <b id="modalPhone"></b></p>
+      <p class="code-line">Kod tuntutan: <b id="code" class="code"></b></p>
+      <p class="hint">Screenshot skrin ini dan hantar kod kepada Live Chat untuk tuntut.</p>
+      <a class="btn gold" id="claimBtn" target="_blank" rel="noopener">CLAIM AT LIVE CHAT</a>
+      <button class="close" type="button" id="closeModal">Tutup</button>
+    </div>
+  </div>
+
+  <div class="fx" id="fx" aria-hidden="true"></div>
+  <script src="/claw.js"></script>
+</body>
+</html>

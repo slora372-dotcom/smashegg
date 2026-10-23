@@ -1,7 +1,7 @@
 // POST /api/play  { phone, egg, check }
 //   check: true  -> only tells if the phone can play (no prize given)
 //   otherwise    -> gives one prize to a registered phone, once.
-const { brandOf, keysFor, pipeline, cmd, cleanPhone, pickPrize, makeCode, send, body, rateLimited, handleError } = require("./_lib");
+const { BRANDS, brandOf, keysFor, pipeline, cmd, cleanPhone, pickPrize, makeCode, send, body, rateLimited, handleError } = require("./_lib");
 
 // Numbers for testing: unlimited plays on all brands, no claim is recorded.
 // Remove a number here when testing is finished.
@@ -21,7 +21,7 @@ module.exports = async (req, res) => {
     if (TEST_PHONES.includes(phone)) {
       if (b.check) return send(res, 200, { ok: true, status: "eligible", test: true });
       const egg = Math.max(0, Math.min(4, parseInt(b.egg, 10) || 0));
-      const claim = { amount: pickPrize(), code: "TEST-" + makeCode().slice(3), egg, at: new Date().toISOString(), test: true };
+      const claim = { amount: pickPrize(BRANDS[brand].prizes), code: "TEST-" + makeCode().slice(3), egg, at: new Date().toISOString(), test: true };
       return send(res, 200, { ok: true, status: "won", claim, test: true });
     }
 
@@ -36,7 +36,7 @@ module.exports = async (req, res) => {
     if (b.check) return send(res, 200, { ok: true, status: "eligible" });
 
     const egg = Math.max(0, Math.min(4, parseInt(b.egg, 10) || 0));
-    const claim = { amount: pickPrize(), code: makeCode(), egg, at: new Date().toISOString() };
+    const claim = { amount: pickPrize(BRANDS[brand].prizes), code: makeCode(BRANDS[brand].codePrefix), egg, at: new Date().toISOString() };
 
     // SET ... NX only succeeds once per phone, even if two requests arrive together.
     const ok = await cmd("SET", KEYS.claim(phone), JSON.stringify(claim), "NX");

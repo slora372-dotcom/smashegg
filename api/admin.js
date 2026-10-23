@@ -76,7 +76,7 @@ module.exports = async (req, res) => {
       case "me":
         return send(res, 200, {
           ok: true, user: who.user, role: who.role,
-          brands: who.brands.map((k) => ({ key: k, name: BRANDS[k].name })),
+          brands: who.brands.map((k) => ({ key: k, name: BRANDS[k].name, path: BRANDS[k].path })),
           allBrands: Object.keys(BRANDS).map((k) => ({ key: k, name: BRANDS[k].name })),
         });
 
