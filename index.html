@@ -27,7 +27,7 @@
       <h2 class="section-title" id="gamesTitle">🎮 Semua mini game</h2>
       <div class="games">
 
-        <a class="game live" href="/smashegg/ggc">
+        <button class="game live" type="button" id="playSmash" aria-haspopup="dialog">
           <span class="badge live-badge">● MAIN SEKARANG</span>
           <span class="art xmas" aria-hidden="true">
             <svg viewBox="0 0 100 140">
@@ -46,7 +46,7 @@
             <span>Pecahkan telur emas, menang sehingga RM15</span>
           </span>
           <span class="play">PLAY ▶</span>
-        </a>
+        </button>
 
         <div class="game soon" aria-disabled="true">
           <span class="badge">COMING SOON</span>
@@ -98,5 +98,30 @@
 
     <footer class="foot">© 2026 MiniGame68 · 18+ sahaja · Main secara bertanggungjawab</footer>
   </main>
+
+  <!-- Choose platform for Christmas Smash Egg -->
+  <div class="picker" id="picker" hidden>
+    <div class="picker-box" role="dialog" aria-modal="true" aria-labelledby="pickerTitle">
+      <button class="picker-close" type="button" id="pickerClose" aria-label="Tutup">×</button>
+      <p class="picker-kicker">🎄 Christmas Smash Egg</p>
+      <h2 id="pickerTitle">Pilih platform anda</h2>
+      <p class="picker-sub">Pilih tempat akaun anda didaftarkan.</p>
+      <div class="picker-options">
+        <a class="pick ggc" href="/smashegg/ggc"><b>GGC</b><span>Main sekarang ▶</span></a>
+        <a class="pick ppg" href="/smashegg/ppg"><b>PPG</b><span>Main sekarang ▶</span></a>
+      </div>
+    </div>
+  </div>
+  <script>
+    (function () {
+      var picker = document.getElementById("picker");
+      var open = function () { picker.hidden = false; picker.querySelector(".pick").focus(); };
+      var close = function () { picker.hidden = true; };
+      document.getElementById("playSmash").addEventListener("click", open);
+      document.getElementById("pickerClose").addEventListener("click", close);
+      picker.addEventListener("click", function (e) { if (e.target === picker) close(); });
+      document.addEventListener("keydown", function (e) { if (e.key === "Escape") close(); });
+    })();
+  </script>
 </body>
 </html>

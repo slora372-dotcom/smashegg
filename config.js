@@ -8,7 +8,7 @@ window.GAME_BRANDS = {
     storageKey: "xmas-smash-egg-2026",                    // remembers the result on the player's phone
   },
   ppg: {
-    claimUrl: "https://ppg668.cc/register.php?r=BMMTH",
+    claimUrl: "https://ppg668.cc",
     storageKey: "xmas-smash-egg-2026-ppg",
   },
 };
