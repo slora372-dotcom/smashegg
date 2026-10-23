@@ -53,6 +53,8 @@
     .checks { display: flex; gap: 12px; flex-wrap: wrap; align-items: center; }
     .check { display: flex; gap: 6px; align-items: center; color: var(--muted); }
     .check input { width: auto; }
+    .check.replace { margin-top: 10px; font-size: 13px; }
+    #wipeBtn { margin-top: 4px; }
     .who { padding: 0 8px 14px; font-size: 12px; color: var(--muted); border-bottom: 1px solid var(--line); }
     .nav { display: grid; gap: 4px; margin-top: 14px; }
     .nav button { display: flex; align-items: center; gap: 10px; width: 100%; padding: 10px 12px; border-radius: 8px; background: transparent; color: var(--muted); font-weight: 600; text-align: left; }
@@ -117,6 +119,11 @@
             <div class="stat"><span class="muted">Sudah tuntut</span><b id="sClaims">–</b></div>
             <div class="stat"><span class="muted">Jumlah hadiah</span><b id="sTotal">–</b></div>
           </div>
+          <div class="row" data-roles="owner admin">
+            <button class="danger" id="wipeBtn" type="button">🗑 Padam semua nombor · <span class="brand-name"></span></button>
+            <span class="muted">Hanya nombor telefon dipadam. Tuntutan dan pemenang kekal.</span>
+          </div>
+          <p class="msg" id="wipeMsg"></p>
         </section>
       </div>
 
@@ -143,6 +150,7 @@
             <input id="file" type="file" accept=".csv,.txt,text/csv,text/plain" style="flex:1">
             <button id="addBtn" disabled>Tambah</button>
           </div>
+          <label class="check replace"><input type="checkbox" id="replaceList"> Ganti senarai lama: padam semua nombor <span class="brand-name"></span> dahulu, kemudian tambah senarai ini</label>
           <p class="msg muted" id="addInfo"></p>
         </section>
 

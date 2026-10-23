@@ -196,7 +196,20 @@
   $("addBtn").addEventListener("click", async () => {
     const phones = collect();
     if (!phones.length) return;
+    const replace = $("replaceList").checked;
+    if (replace && !confirm(`Padam SEMUA nombor ${brandName(brand)} dahulu, kemudian tambah ${phones.length.toLocaleString()} nombor ini?`)) return;
     $("addBtn").disabled = true;
+    if (replace) {
+      $("addInfo").className = "msg muted";
+      $("addInfo").textContent = "Memadam senarai lama...";
+      const wiped = await call("clearPlayers", { confirm: "DELETE" });
+      if (!wiped.ok) {
+        $("addInfo").className = "msg err";
+        $("addInfo").textContent = errText(wiped.error);
+        $("addBtn").disabled = false;
+        return;
+      }
+    }
     let added = 0;
     for (let i = 0; i < phones.length; i += 2000) {
       $("addInfo").textContent = `Menghantar ${Math.min(i + 2000, phones.length).toLocaleString()} / ${phones.length.toLocaleString()}...`;
@@ -210,8 +223,11 @@
       added += out.added;
     }
     $("addInfo").className = "msg ok";
-    $("addInfo").textContent = `Siap. ${added.toLocaleString()} nombor baharu ditambah (${(phones.length - added).toLocaleString()} sudah ada).`;
+    $("addInfo").textContent = replace
+      ? `Siap. Senarai lama dipadam, ${added.toLocaleString()} nombor ditambah.`
+      : `Siap. ${added.toLocaleString()} nombor baharu ditambah (${(phones.length - added).toLocaleString()} sudah ada).`;
     $("paste").value = ""; $("file").value = ""; fileText = "";
+    $("replaceList").checked = false;
     $("addBtn").textContent = "Tambah";
     refresh();
   });
@@ -348,6 +364,18 @@
       $("auditTable").hidden = out.entries.length === 0;
     });
   }
+
+  // ---------- Delete all numbers (button on Ringkasan) ----------
+  if ($("wipeBtn")) $("wipeBtn").addEventListener("click", async () => {
+    const n = $("sPlayers").textContent;
+    if (!confirm(`Padam SEMUA ${n} nombor pemain untuk ${brandName(brand)}?\n\nTuntutan dan pemenang tidak dipadam. Tindakan ini tidak boleh dibatalkan.`)) return;
+    $("wipeBtn").disabled = true;
+    const out = await call("clearPlayers", { confirm: "DELETE" });
+    $("wipeBtn").disabled = false;
+    $("wipeMsg").className = out.ok ? "msg ok" : "msg err";
+    $("wipeMsg").textContent = out.ok ? `Semua nombor ${brandName(brand)} dipadam. Anda boleh muat naik senarai baharu di Pemain.` : errText(out.error);
+    refresh();
+  });
 
   // ---------- Clear players ----------
   if ($("clearBtn")) $("clearBtn").addEventListener("click", async () => {
