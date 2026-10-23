@@ -31,7 +31,9 @@ body.claw-page {
 .trolley { width: 30px; height: 14px; margin: 0 auto; border-radius: 4px; background: linear-gradient(180deg, #ffd34d, #b37400); border: 1.5px solid #7a4a00; }
 /* Rope stretches (scaleY) and the claw slides down (translateY): both run on the GPU. */
 .rope { width: 3px; height: 8px; margin: 0 auto; background: linear-gradient(90deg, #7a8395, #eef1f6 50%, #7a8395); transform-origin: 50% 0; transition: transform var(--speed, 1.8s) cubic-bezier(.45, 0, .25, 1); will-change: transform; }
-.claw { display: block; width: 76px; height: auto; filter: drop-shadow(0 4px 6px rgba(0, 0, 0, .5)); transition: transform var(--speed, 1.8s) cubic-bezier(.45, 0, .25, 1); will-change: transform; }
+/* The box around the claw moves down (Safari on iPhone does not move the svg itself). */
+.clawbox { width: 76px; transition: -webkit-transform var(--speed, 1.8s) cubic-bezier(.45, 0, .25, 1), transform var(--speed, 1.8s) cubic-bezier(.45, 0, .25, 1); will-change: transform; }
+.claw { display: block; width: 76px; height: auto; filter: drop-shadow(0 4px 6px rgba(0, 0, 0, .5)); }
 .prong { transform-box: fill-box; transition: transform .35s ease; }
 .prong.left { transform-origin: 100% 0; }
 .prong.right { transform-origin: 0 0; }

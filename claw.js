@@ -188,10 +188,10 @@
 
   // ---------- DROP ----------
   // Lowers (or raises) the claw: the rope stretches and the claw slides, on the GPU.
-  const rope = $("rope");
+  const rope = $("rope"), clawbox = $("clawbox");
   function setDrop(px) {
     rope.style.transform = `scaleY(${((8 + px) / 8).toFixed(3)})`;
-    claw.style.transform = `translate3d(0,${px.toFixed(1)}px,0)`;
+    clawbox.style.transform = `translate3d(0,${px.toFixed(1)}px,0)`;
   }
 
   async function drop() {
