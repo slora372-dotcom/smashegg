@@ -6,10 +6,16 @@
 //   owner  (username olen1919, password = ADMIN_PASSWORD in Vercel): everything
 //   admin  : everything except managing accounts
 //   staff  : stats, lookup, claims, change own password
+//
+// Player, claim and stats actions take { brand } (ggc, ppg, ...). Each account
+// only sees the brands it was given.
 const {
-  KEYS, AUTH, ROLES, OWNER, pipeline, cmd, cleanPhone, send, body, clientIp,
+  BRANDS, brandOf, keysFor, userBrands, AUTH, ROLES, OWNER, pipeline, cmd, cleanPhone, send, body, clientIp,
   hashPassword, checkLogin, createSession, getSession, audit, handleError,
 } = require("./_lib");
+
+const BRAND_ACTIONS = ["stats", "add", "lookup", "remove", "resetClaim", "claims", "clearPlayers"];
+const cleanBrands = (list) => [...new Set((Array.isArray(list) ? list : []).filter(brandOf))];
 
 const CAN = {
   stats: ["owner", "admin", "staff"],
@@ -27,6 +33,7 @@ const CAN = {
   addUser: ["owner"],
   removeUser: ["owner"],
   setPassword: ["owner"],
+  setUserBrands: ["owner"],
 };
 
 const validUsername = (u) => /^[a-z0-9._-]{3,20}$/.test(u) && u !== OWNER;
@@ -55,9 +62,23 @@ module.exports = async (req, res) => {
     if (!CAN[b.action]) return send(res, 400, { ok: false, error: "unknown_action" });
     if (!CAN[b.action].includes(who.role)) return send(res, 403, { ok: false, error: "no_permission" });
 
+    // Which brand's data this request is about.
+    let brand = "", KEYS = null;
+    if (BRAND_ACTIONS.includes(b.action)) {
+      brand = brandOf(b.brand || "ggc");
+      if (!brand) return send(res, 400, { ok: false, error: "unknown_brand" });
+      if (!who.brands.includes(brand)) return send(res, 403, { ok: false, error: "no_brand_access" });
+      KEYS = keysFor(brand);
+    }
+    const tag = (s) => `[${BRANDS[brand].name}] ${s}`;
+
     switch (b.action) {
       case "me":
-        return send(res, 200, { ok: true, user: who.user, role: who.role });
+        return send(res, 200, {
+          ok: true, user: who.user, role: who.role,
+          brands: who.brands.map((k) => ({ key: k, name: BRANDS[k].name })),
+          allBrands: Object.keys(BRANDS).map((k) => ({ key: k, name: BRANDS[k].name })),
+        });
 
       case "logout":
         await cmd("DEL", AUTH.session(who.token));
@@ -78,7 +99,7 @@ module.exports = async (req, res) => {
           added += await cmd("SADD", KEYS.players, ...valid.slice(i, i + 500));
         }
         const players = await cmd("SCARD", KEYS.players);
-        if (added) await audit(who, "add players", `${added} added`);
+        if (added) await audit(who, "add players", tag(`${added} added`));
         return send(res, 200, { ok: true, received: list.length, valid: valid.length, added, players });
       }
 
@@ -93,7 +114,7 @@ module.exports = async (req, res) => {
         const phone = cleanPhone(b.phone);
         if (!phone) return send(res, 400, { ok: false, error: "invalid_phone" });
         const removed = await cmd("SREM", KEYS.players, phone);
-        if (removed) await audit(who, "remove player", phone);
+        if (removed) await audit(who, "remove player", tag(phone));
         return send(res, 200, { ok: true, removed });
       }
 
@@ -101,7 +122,7 @@ module.exports = async (req, res) => {
         const phone = cleanPhone(b.phone);
         if (!phone) return send(res, 400, { ok: false, error: "invalid_phone" });
         const removed = await cmd("DEL", KEYS.claim(phone));
-        if (removed) await audit(who, "allow replay", phone);
+        if (removed) await audit(who, "allow replay", tag(phone));
         return send(res, 200, { ok: true, removed });
       }
 
@@ -113,7 +134,7 @@ module.exports = async (req, res) => {
       case "clearPlayers": {
         if (b.confirm !== "DELETE") return send(res, 400, { ok: false, error: "confirm" });
         await cmd("DEL", KEYS.players);
-        await audit(who, "clear player list", "");
+        await audit(who, "clear player list", tag(""));
         return send(res, 200, { ok: true });
       }
 
@@ -128,7 +149,7 @@ module.exports = async (req, res) => {
         const users = [];
         for (let i = 0; i < flat.length; i += 2) {
           const rec = JSON.parse(flat[i + 1]);
-          users.push({ username: flat[i], role: rec.role, created: rec.created });
+          users.push({ username: flat[i], role: rec.role, created: rec.created, brands: userBrands(rec) });
         }
         users.sort((x, y) => x.username.localeCompare(y.username));
         return send(res, 200, { ok: true, users });
@@ -139,10 +160,12 @@ module.exports = async (req, res) => {
         if (!validUsername(u)) return send(res, 400, { ok: false, error: "bad_username" });
         if (!validPassword(b.password)) return send(res, 400, { ok: false, error: "bad_password" });
         if (!ROLES.includes(b.role)) return send(res, 400, { ok: false, error: "bad_role" });
-        const rec = { ...hashPassword(b.password), role: b.role, created: new Date().toISOString() };
+        const brands = cleanBrands(b.brands);
+        if (!brands.length) return send(res, 400, { ok: false, error: "bad_brands" });
+        const rec = { ...hashPassword(b.password), role: b.role, brands, created: new Date().toISOString() };
         const isNew = await cmd("HSETNX", AUTH.users, u, JSON.stringify(rec));
         if (!isNew) return send(res, 400, { ok: false, error: "user_exists" });
-        await audit(who, "add user", `${u} (${b.role})`);
+        await audit(who, "add user", `${u} (${b.role}, ${brands.join(", ")})`);
         return send(res, 200, { ok: true });
       }
 
@@ -161,6 +184,17 @@ module.exports = async (req, res) => {
         const rec = { ...JSON.parse(raw), ...hashPassword(b.password) };
         await cmd("HSET", AUTH.users, u, JSON.stringify(rec));
         await audit(who, "reset password", u);
+        return send(res, 200, { ok: true });
+      }
+
+      case "setUserBrands": {
+        const u = String(b.username || "").trim().toLowerCase();
+        const brands = cleanBrands(b.brands);
+        if (!brands.length) return send(res, 400, { ok: false, error: "bad_brands" });
+        const raw = await cmd("HGET", AUTH.users, u);
+        if (!raw) return send(res, 404, { ok: false, error: "no_user" });
+        await cmd("HSET", AUTH.users, u, JSON.stringify({ ...JSON.parse(raw), brands }));
+        await audit(who, "change brand access", `${u}: ${brands.join(", ")}`);
         return send(res, 200, { ok: true });
       }
 

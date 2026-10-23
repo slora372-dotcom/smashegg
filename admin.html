@@ -47,6 +47,12 @@
     .layout { display: grid; grid-template-columns: 230px minmax(0, 1fr); min-height: 100vh; }
     .side { position: sticky; top: 0; height: 100vh; display: flex; flex-direction: column; padding: 18px 12px; background: var(--side); border-right: 1px solid var(--line); }
     .side h1 { padding: 0 8px 4px; }
+    .brand-pick { display: grid; gap: 4px; margin: 12px 8px 0; font-size: 12px; color: var(--muted); }
+    .brand-pick select { width: 100%; border-color: rgba(251, 191, 36, .5); color: var(--gold); font-weight: 700; }
+    .brand-name { color: var(--text); }
+    .checks { display: flex; gap: 12px; flex-wrap: wrap; align-items: center; }
+    .check { display: flex; gap: 6px; align-items: center; color: var(--muted); }
+    .check input { width: auto; }
     .who { padding: 0 8px 14px; font-size: 12px; color: var(--muted); border-bottom: 1px solid var(--line); }
     .nav { display: grid; gap: 4px; margin-top: 14px; }
     .nav button { display: flex; align-items: center; gap: 10px; width: 100%; padding: 10px 12px; border-radius: 8px; background: transparent; color: var(--muted); font-weight: 600; text-align: left; }
@@ -89,6 +95,7 @@
     <aside class="side">
       <h1>🎄 Smash Egg</h1>
       <p class="who" id="whoami"></p>
+      <label class="brand-pick"><span>Game</span><select id="brandSel" aria-label="Pilih game"></select></label>
       <nav class="nav" aria-label="Kategori">
         <button data-go="summary" class="on">📊 Ringkasan</button>
         <button data-go="players">📱 Pemain</button>
@@ -104,7 +111,7 @@
       <!-- Ringkasan -->
       <div class="view" data-view="summary">
         <section class="card">
-          <div class="head"><h2>Ringkasan</h2><button class="ghost" id="refresh">Muat semula</button></div>
+          <div class="head"><h2>Ringkasan · <span class="brand-name"></span></h2><button class="ghost" id="refresh">Muat semula</button></div>
           <div class="stats">
             <div class="stat"><span class="muted">Pemain berdaftar</span><b id="sPlayers">–</b></div>
             <div class="stat"><span class="muted">Sudah tuntut</span><b id="sClaims">–</b></div>
@@ -116,7 +123,7 @@
       <!-- Pemain -->
       <div class="view" data-view="players" hidden>
         <section class="card">
-          <h2>Cari nombor</h2>
+          <h2>Cari nombor · <span class="brand-name"></span></h2>
           <form id="lookupForm" class="row">
             <input id="lookupPhone" placeholder="60123456789" inputmode="numeric">
             <button type="submit">Cari</button>
@@ -129,7 +136,7 @@
         </section>
 
         <section class="card" data-roles="owner admin">
-          <h2>Tambah nombor pemain</h2>
+          <h2>Tambah nombor pemain · <span class="brand-name"></span></h2>
           <p class="muted">Tampal nombor (satu setiap baris), atau pilih fail CSV / TXT. Jika fail ada lajur "Phone", hanya lajur itu digunakan. Nombor yang sudah ada tidak akan berganda.</p>
           <textarea id="paste" placeholder="0123456789&#10;0177666674&#10;..."></textarea>
           <div class="row">
@@ -140,7 +147,7 @@
         </section>
 
         <section class="card" data-roles="owner admin">
-          <h2 style="color:#fca5a5">Kosongkan senarai pemain</h2>
+          <h2 style="color:#fca5a5">Kosongkan senarai pemain · <span class="brand-name"></span></h2>
           <p class="muted">Buang SEMUA nombor pemain (tuntutan yang sudah dibuat tidak dipadam). Taip DELETE untuk sahkan.</p>
           <div class="row">
             <input id="confirmDelete" placeholder="DELETE">
@@ -154,7 +161,7 @@
       <div class="view" data-view="claims" hidden>
         <section class="card">
           <div class="head">
-            <h2>Semua tuntutan</h2>
+            <h2>Semua tuntutan · <span class="brand-name"></span></h2>
             <div class="row" style="margin:0"><button class="ghost" id="loadClaims">Muat semula</button><button class="ghost" id="downloadClaims">Muat turun CSV</button></div>
           </div>
           <div class="table-wrap"><table id="claimsTable" hidden>
@@ -169,9 +176,9 @@
       <div class="view" data-view="users" data-roles="owner" hidden>
         <section class="card">
           <h2>Pengguna admin</h2>
-          <p class="muted"><b>Admin</b>: semua kecuali urus pengguna. <b>Staff</b>: cari nombor dan lihat tuntutan sahaja.</p>
+          <p class="muted"><b>Admin</b>: semua kecuali urus pengguna. <b>Staff</b>: cari nombor dan lihat tuntutan sahaja. Setiap pengguna hanya nampak brand yang diberi.</p>
           <div class="table-wrap"><table id="usersTable">
-            <thead><tr><th>Nama pengguna</th><th>Peranan</th><th>Dicipta</th><th></th></tr></thead>
+            <thead><tr><th>Nama pengguna</th><th>Peranan</th><th>Brand</th><th>Dicipta</th><th></th></tr></thead>
             <tbody></tbody>
           </table></div>
         </section>
@@ -181,6 +188,7 @@
             <input id="newUser" placeholder="Nama pengguna (cth: ali)" autocapitalize="none" autocomplete="off">
             <input id="newPass" type="text" placeholder="Kata laluan (min 8)" autocomplete="new-password">
             <select id="newRole"><option value="staff">Staff</option><option value="admin">Admin</option></select>
+            <div class="checks" id="newBrands"></div>
             <button type="submit">Tambah pengguna</button>
           </form>
           <p class="msg" id="userMsg"></p>

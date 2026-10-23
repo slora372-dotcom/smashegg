@@ -3,8 +3,15 @@
 
 const crypto = require("crypto");
 
-// Change NS to start a new campaign with a fresh player list and claims.
-const NS = process.env.GAME_NAMESPACE || "xmas26:";
+// Each brand link (/smashegg/<brand>) has its own player list, claims and stats.
+// To add a brand: add a line here, in config.js, and copy the smashegg/ggc folder.
+// GGC keeps the original "xmas26:" data so nothing already uploaded is lost.
+const BRANDS = {
+  ggc: { name: "GGC", ns: "xmas26:" },
+  ppg: { name: "PPG", ns: "xmas26:ppg:" },
+};
+const NS = BRANDS.ggc.ns;
+const brandOf = (v) => (Object.prototype.hasOwnProperty.call(BRANDS, v) ? v : "");
 
 // Prizes RM1 to RM15. Higher weight = more likely. Weights add up to 100.
 const PRIZES = [
@@ -13,15 +20,18 @@ const PRIZES = [
   [11, 2], [12, 2], [13, 1], [14, 1], [15, 1],
 ];
 
-const KEYS = {
-  players: NS + "players",            // set of phone numbers allowed to play
-  claim: (p) => NS + "claim:" + p,    // one claim per phone (JSON)
-  recent: NS + "recent",              // latest winners for the public list
-  log: NS + "log",                    // every claim, for the admin page
-  count: NS + "stats:count",
-  total: NS + "stats:total",
-  rate: (ip) => NS + "rl:" + ip,
-};
+function keysFor(brand) {
+  const ns = BRANDS[brand].ns;
+  return {
+    players: ns + "players",            // set of phone numbers allowed to play
+    claim: (p) => ns + "claim:" + p,    // one claim per phone (JSON)
+    recent: ns + "recent",              // latest winners for the public list
+    log: ns + "log",                    // every claim, for the admin page
+    count: ns + "stats:count",
+    total: ns + "stats:total",
+  };
+}
+const KEYS = { rate: (ip) => NS + "rl:" + ip };
 
 // ---------- Upstash Redis over its REST API (no packages needed) ----------
 const DB_URL = process.env.UPSTASH_REDIS_REST_URL || process.env.KV_REST_API_URL;
@@ -143,10 +153,18 @@ async function getSession(req) {
   const raw = await cmd("GET", AUTH.session(token));
   if (!raw) return null;
   const who = JSON.parse(raw);
-  if (who.role === "owner") return who.user === OWNER ? { ...who, token } : null;
-  // A deleted account is logged out at once; a changed role applies at once.
-  const rec = await cmd("HGET", AUTH.users, who.user);
-  return rec ? { user: who.user, role: JSON.parse(rec).role, token } : null;
+  if (who.role === "owner") return who.user === OWNER ? { ...who, brands: Object.keys(BRANDS), token } : null;
+  // A deleted account is logged out at once; a changed role or brand access applies at once.
+  const raw2 = await cmd("HGET", AUTH.users, who.user);
+  if (!raw2) return null;
+  const rec = JSON.parse(raw2);
+  return { user: who.user, role: rec.role, brands: userBrands(rec), token };
+}
+
+// Brands an account may see. Older accounts without a list can see every brand.
+function userBrands(rec) {
+  const list = Array.isArray(rec.brands) ? rec.brands.filter(brandOf) : Object.keys(BRANDS);
+  return list.length ? list : Object.keys(BRANDS);
 }
 
 async function audit(who, action, detail) {
@@ -164,6 +182,6 @@ function handleError(res, e) {
 }
 
 module.exports = {
-  NS, KEYS, PRIZES, AUTH, ROLES, pipeline, cmd, cleanPhone, pickPrize, makeCode, send, body, clientIp,
+  BRANDS, brandOf, keysFor, userBrands, NS, KEYS, PRIZES, AUTH, ROLES, pipeline, cmd, cleanPhone, pickPrize, makeCode, send, body, clientIp,
   OWNER, rateLimited, hashPassword, checkLogin, createSession, getSession, audit, handleError,
 };

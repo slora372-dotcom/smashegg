@@ -4,6 +4,9 @@
   let token = "";
   let role = "";
   let myName = "";
+  let brand = "ggc";
+  let allBrands = [];
+  try { brand = sessionStorage.getItem("smashEggBrand") || "ggc"; } catch (e) {}
   try { token = sessionStorage.getItem(KEY) || ""; } catch (e) {}
   const esc = (s) => String(s == null ? "" : s).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
 
@@ -17,7 +20,7 @@
     const r = await fetch("/api/admin", {
       method: "POST",
       headers: { "Content-Type": "application/json", Authorization: "Bearer " + token },
-      body: JSON.stringify({ action, ...data }),
+      body: JSON.stringify({ action, brand, ...data }),
     });
     const out = await r.json().catch(() => ({ ok: false, error: "server_error" }));
     // Logged out (expired after 12 hours, or account deleted): back to the login box.
@@ -35,6 +38,9 @@
     bad_password: "Kata laluan mesti sekurang-kurangnya 8 aksara.",
     bad_role: "Pilih peranan.",
     user_exists: "Nama pengguna sudah wujud.",
+    bad_brands: "Pilih sekurang-kurangnya satu brand.",
+    no_brand_access: "Anda tiada akses kepada brand ini.",
+    unknown_brand: "Brand tidak wujud.",
     wrong_old_password: "Kata laluan lama salah.",
   }[e] || "Ralat: " + e);
 
@@ -55,10 +61,42 @@
     document.querySelectorAll("[data-roles]").forEach((el) => {
       if (!el.dataset.roles.split(" ").includes(role)) el.remove();
     });
+
+    // Brand switch: only the brands this account may see.
+    allBrands = me.allBrands || [];
+    const mine = me.brands || [];
+    if (!mine.some((x) => x.key === brand)) brand = mine.length ? mine[0].key : "ggc";
+    $("brandSel").innerHTML = mine.map((x) => `<option value="${esc(x.key)}">${esc(x.name)} · /smashegg/${esc(x.key)}</option>`).join("");
+    $("brandSel").value = brand;
+    $("brandSel").disabled = mine.length < 2;
+    showBrand();
+    if ($("newBrands")) {
+      $("newBrands").innerHTML = allBrands.map((x) =>
+        `<label class="check"><input type="checkbox" value="${esc(x.key)}" checked> ${esc(x.name)}</label>`).join("");
+    }
+
     $("login").hidden = true;
     $("panel").hidden = false;
     refresh();
   }
+
+  function brandName(k) { const x = allBrands.find((b) => b.key === k); return x ? x.name : k.toUpperCase(); }
+  function showBrand() {
+    document.querySelectorAll(".brand-name").forEach((el) => (el.textContent = brandName(brand)));
+  }
+  $("brandSel").addEventListener("change", () => {
+    brand = $("brandSel").value;
+    try { sessionStorage.setItem("smashEggBrand", brand); } catch (e) {}
+    showBrand();
+    // Clear anything that belonged to the previous brand, then reload what's on screen.
+    $("lookupResult").textContent = "";
+    if ($("lookupActions")) $("lookupActions").hidden = true;
+    $("claimsTable").hidden = true;
+    $("claimsInfo").textContent = "";
+    const open = document.querySelector(".nav .on");
+    if (open && OPEN[open.dataset.go]) OPEN[open.dataset.go]();
+    else refresh();
+  });
 
   // ---------- Sidebar categories ----------
   const OPEN = {
@@ -232,7 +270,7 @@
     const csv = lines.map((r) => r.map((v) => `"${String(v).replace(/"/g, '""')}"`).join(",")).join("\r\n");
     const a = document.createElement("a");
     a.href = URL.createObjectURL(new Blob(["﻿" + csv], { type: "text/csv" }));
-    a.download = "smash-egg-claims.csv";
+    a.download = `smash-egg-claims-${brand}.csv`;
     a.click();
   });
 
@@ -241,10 +279,11 @@
     const out = await call("listUsers");
     if (!out.ok) { $("userMsg").className = "msg err"; $("userMsg").textContent = errText(out.error); return; }
     $("usersTable").querySelector("tbody").innerHTML =
-      `<tr><td><b>${esc(myName)}</b></td><td>owner</td><td class="muted">Vercel</td><td></td></tr>` +
+      `<tr><td><b>${esc(myName)}</b></td><td>owner</td><td>Semua</td><td class="muted">–</td><td></td></tr>` +
       out.users.map((u) =>
-        `<tr><td><b>${esc(u.username)}</b></td><td>${esc(u.role)}</td><td>${new Date(u.created).toLocaleDateString()}</td>` +
-        `<td><button class="ghost" data-pass="${esc(u.username)}">Tukar kata laluan</button><button class="danger" data-del="${esc(u.username)}">Padam</button></td></tr>`
+        `<tr><td><b>${esc(u.username)}</b></td><td>${esc(u.role)}</td><td>${esc(u.brands.map(brandName).join(", "))}</td><td>${new Date(u.created).toLocaleDateString()}</td>` +
+        `<td><button class="ghost" data-brands="${esc(u.username)}" data-current="${esc(u.brands.join(","))}">Akses brand</button>` +
+        `<button class="ghost" data-pass="${esc(u.username)}">Tukar kata laluan</button><button class="danger" data-del="${esc(u.username)}">Padam</button></td></tr>`
       ).join("");
   }
   if ($("usersTable")) {
@@ -262,12 +301,22 @@
         const out = await call("setPassword", { username: pass, password: p });
         $("userMsg").className = out.ok ? "msg ok" : "msg err";
         $("userMsg").textContent = out.ok ? `Kata laluan ${pass} ditukar.` : errText(out.error);
+      } else if (e.target.dataset.brands) {
+        const u = e.target.dataset.brands;
+        const keys = allBrands.map((x) => x.key).join(", ");
+        const v = prompt(`Brand yang ${u} boleh lihat (pisahkan dengan koma).\nPilihan: ${keys}`, e.target.dataset.current.replace(/,/g, ", "));
+        if (v == null) return;
+        const out = await call("setUserBrands", { username: u, brands: v.toLowerCase().split(/[\s,]+/).filter(Boolean) });
+        $("userMsg").className = out.ok ? "msg ok" : "msg err";
+        $("userMsg").textContent = out.ok ? `Akses brand ${u} dikemas kini.` : errText(out.error);
+        loadUsers();
       }
     });
     $("addUserForm").addEventListener("submit", async (e) => {
       e.preventDefault();
       const username = $("newUser").value.trim().toLowerCase();
-      const out = await call("addUser", { username, password: $("newPass").value, role: $("newRole").value });
+      const brands = [...document.querySelectorAll("#newBrands input:checked")].map((x) => x.value);
+      const out = await call("addUser", { username, password: $("newPass").value, role: $("newRole").value, brands });
       $("userMsg").className = out.ok ? "msg ok" : "msg err";
       $("userMsg").textContent = out.ok ? `Pengguna ${username} ditambah. Beri nama pengguna dan kata laluan kepada mereka.` : errText(out.error);
       if (out.ok) { $("newUser").value = ""; $("newPass").value = ""; loadUsers(); }

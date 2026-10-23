@@ -98,7 +98,7 @@
     if (!phone) return phoneError(MESSAGES.invalid_phone);
     $("playBtn").disabled = true;
     $("playBtn").textContent = "...";
-    const out = await api("/api/play", { phone, check: true }).catch(() => ({ ok: false, error: "server_error" }));
+    const out = await api("/api/play", { brand: G.brand, phone, check: true }).catch(() => ({ ok: false, error: "server_error" }));
     $("playBtn").disabled = false;
     $("playBtn").textContent = "PLAY";
     if (!out.ok) return phoneError(MESSAGES[out.error] || MESSAGES.server_error);
@@ -126,7 +126,7 @@
   let mine = null;
   async function loadWinners() {
     try {
-      const out = await api("/api/winners");
+      const out = await api("/api/winners?brand=" + G.brand);
       if (out.ok) { winners = out.winners; renderWinners(); }
     } catch (e) {}
   }
@@ -265,7 +265,7 @@
     placeHammer(egg);
 
     // Ask the server while the hammer swings.
-    const request = api("/api/play", { phone, egg: i }).catch(() => ({ ok: false, error: "server_error" }));
+    const request = api("/api/play", { brand: G.brand, phone, egg: i }).catch(() => ({ ok: false, error: "server_error" }));
     const hit = async (n) => {
       const h = $("hammer");
       h.classList.remove("swing"); void h.offsetWidth; h.classList.add("swing");

@@ -1,12 +1,15 @@
 // POST /api/play  { phone, egg, check }
 //   check: true  -> only tells if the phone can play (no prize given)
 //   otherwise    -> gives one prize to a registered phone, once.
-const { KEYS, pipeline, cmd, cleanPhone, pickPrize, makeCode, send, body, rateLimited, handleError } = require("./_lib");
+const { brandOf, keysFor, pipeline, cmd, cleanPhone, pickPrize, makeCode, send, body, rateLimited, handleError } = require("./_lib");
 
 module.exports = async (req, res) => {
   if (req.method !== "POST") return send(res, 405, { ok: false, error: "method" });
   try {
     const b = body(req);
+    const brand = brandOf(b.brand || "ggc");
+    if (!brand) return send(res, 400, { ok: false, error: "unknown_brand" });
+    const KEYS = keysFor(brand);
     const phone = cleanPhone(b.phone);
     if (!phone) return send(res, 400, { ok: false, error: "invalid_phone" });
     if (await rateLimited(req)) return send(res, 429, { ok: false, error: "too_many" });
