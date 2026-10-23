@@ -17,7 +17,7 @@ module.exports = async (req, res) => {
     const phone = cleanPhone(b.phone);
     if (!phone) return send(res, 400, { ok: false, error: "invalid_phone" });
 
-    // Test numbers play on every brand, as often as they like, and nothing is saved.
+    // Test numbers for this game play as often as they like, and nothing is saved.
     if ((TEST_PHONES[brand] || []).includes(phone)) {
       if (b.check) return send(res, 200, { ok: true, status: "eligible", test: true });
       const egg = Math.max(0, Math.min(4, parseInt(b.egg, 10) || 0));
