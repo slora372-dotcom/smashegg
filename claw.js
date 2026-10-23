@@ -78,7 +78,7 @@
   // ---------- Claw movement ----------
   const glass = $("glass"), carriage = $("carriage"), claw = $("claw"), swing = $("swing");
   let verified = "", moving = false, busy = false, x = 0, dir = 1, last = 0, timer = null;
-  let angle = 0, kick = 0, jitter = 0;
+  let angle = 0, kick = 0, kickAt = 0, jitter = 0, nowT = 0;
 
   // Centre of each chest, measured from the left of the glass.
   const centers = () => {
@@ -99,15 +99,20 @@
     const speed = 1 + 0.4 * Math.sin(t / 650) + 0.25 * Math.sin(t / 210 + 1.7); // 0.35x to 1.65x
     x += dir * ((max - min) / 1500) * speed * dt;
     x += (Math.random() - 0.5) * 0.8;                                            // small shake
-    const turn = (d) => { dir = d; kick = 7 * -d; };
+    nowT = t;
+    // Turning: a hard jolt that swings the claw back and forth a few times before it calms down.
+    const turn = (d) => { dir = d; kick = 22 * -d; kickAt = nowT; if (navigator.vibrate) navigator.vibrate(15); };
     if (x >= max) { x = max; turn(-1); }
     if (x <= min) { x = min; turn(1); }
     if (Math.random() < 0.003 * (dt / 16)) turn(-dir);                           // sudden change of direction
 
     // Swing angle: a slow sway, a faster wobble, the jolt after turning, and jitter.
-    kick *= Math.pow(0.996, dt);
+    kick *= Math.pow(0.9975, dt);                          // fades over about 1.5 s
+    const jolt = kick * Math.cos((t - kickAt) / 85);       // swings back and forth while fading
     jitter += ((Math.random() - 0.5) * 2.4 - jitter) * 0.15;
-    angle = 7 * Math.sin(t / 300) + 2.5 * Math.sin(t / 95 + 0.8) + kick - dir * 2 + jitter;
+    angle = 6 * Math.sin(t / 300) + 2.5 * Math.sin(t / 95 + 0.8) + jolt - dir * 2 + jitter;
+    // The trolley shudders right after a turn too.
+    if (Math.abs(kick) > 6) x = Math.min(max, Math.max(min, x + (Math.random() - 0.5) * Math.abs(kick) * 0.25));
     swing.style.transform = `rotate(${angle}deg)`;
     place(x);
     requestAnimationFrame(step);

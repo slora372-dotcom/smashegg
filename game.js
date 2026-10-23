@@ -310,8 +310,24 @@
   eggs.forEach((b) => b.addEventListener("click", () => smash(b)));
 
   const saved = load();
-  if (saved) showClaimed(saved);
+  if (saved) { showClaimed(saved); recheck(saved); }
   else { lockEggs(); renderWinners(); }
+
+  // The phone remembers a past result, but the server decides. If this number may
+  // play again (a test number, or an admin allowed a replay), start fresh.
+  async function recheck(s) {
+    if (!s.phone || DEMO) return;
+    const out = await api("/api/play", { brand: G.brand, phone: s.phone, check: true }).catch(() => null);
+    if (!out || !out.ok || out.status !== "eligible") return;
+    try { localStorage.removeItem(G.storageKey); } catch (e) {}
+    $("claimed").hidden = true;
+    mine = null; renderWinners();
+    $("phone").disabled = false; $("playBtn").disabled = false;
+    $("phone").value = s.phone;
+    eggs.forEach((b) => b.classList.remove("broken", "picked", "faded", "crack1", "crack2", "crack3", "shake"));
+    lockEggs();
+    $("status").textContent = "📱 Tekan PLAY untuk main.";
+  }
   loadWinners();
   setInterval(loadWinners, 30000);
 
