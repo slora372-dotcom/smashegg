@@ -314,8 +314,23 @@
   // ---------- Start ----------
   addEventListener("resize", () => { if (!moving && !busy) parkCenter(); });
   const saved = load();
-  if (saved) { requestAnimationFrame(() => { parkCenter(); showClaimed(saved); }); }
+  if (saved) { requestAnimationFrame(() => { parkCenter(); showClaimed(saved); }); recheck(saved); }
   else { requestAnimationFrame(lock); renderWinners(); }
+
+  // The phone remembers a past result, but the server decides. If this number may
+  // play again (a test number, or an admin allowed a replay), start fresh.
+  async function recheck(s) {
+    if (!s.phone) return;
+    const out = await api("/api/play", { brand: G.campaign, phone: s.phone, check: true }).catch(() => null);
+    if (!out || !out.ok || out.status !== "eligible") return;
+    try { localStorage.removeItem(G.storageKey); } catch (e) {}
+    $("claimed").hidden = true;
+    mine = null; renderWinners();
+    $("phone").disabled = false; $("playBtn").disabled = false;
+    $("phone").value = s.phone;
+    lock();
+    $("status").textContent = "📱 Tekan PLAY untuk main.";
+  }
   loadWinners();
   setInterval(loadWinners, 30000);
 })();
