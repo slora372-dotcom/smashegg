@@ -4,11 +4,15 @@
 const crypto = require("crypto");
 
 // ---------- Prizes: [amount RM, weight]. Higher weight = more likely. ----------
-// Smash Egg: RM1 to RM15, weights add up to 100.
+// Smash Egg, weights add up to 3000. Each group is split equally between its 3 amounts:
+//   RM1–3 60% (20% each) · RM4–6 30% (10% each) · RM7–9 7% (2.33% each)
+//   RM10–12 2.5% (0.83% each) · RM13–15 0.5% (0.17% each)
 const PRIZES = [
-  [1, 16], [2, 16], [3, 14], [4, 12], [5, 10],
-  [6, 7], [7, 6], [8, 5], [9, 4], [10, 3],
-  [11, 2], [12, 2], [13, 1], [14, 1], [15, 1],
+  [1, 600], [2, 600], [3, 600],
+  [4, 300], [5, 300], [6, 300],
+  [7, 70], [8, 70], [9, 70],
+  [10, 25], [11, 25], [12, 25],
+  [13, 5], [14, 5], [15, 5],
 ];
 // Treasure Claw Tier 1, weights add up to 1000:
 // RM1 55% · RM2 30% · RM5 12% · RM10 2.5% · RM25 0.5%

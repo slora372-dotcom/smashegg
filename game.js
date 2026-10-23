@@ -56,8 +56,8 @@
   function demoApi(path, data) {
     if (path.includes("winners")) return { ok: true, winners: [] };
     if (data.check) return { ok: true, status: "eligible" };
-    const w = [16, 16, 14, 12, 10, 7, 6, 5, 4, 3, 2, 2, 1, 1, 1];
-    let r = Math.random() * 100, amount = 1;
+    const w = [600, 600, 600, 300, 300, 300, 70, 70, 70, 25, 25, 25, 5, 5, 5];
+    let r = Math.random() * 3000, amount = 1;
     for (let i = 0; i < w.length; i++) { if ((r -= w[i]) < 0) { amount = i + 1; break; } }
     const code = "XM-DEMO" + Math.floor(Math.random() * 90 + 10);
     return { ok: true, status: "won", claim: { amount, code, egg: data.egg, at: new Date().toISOString() } };
