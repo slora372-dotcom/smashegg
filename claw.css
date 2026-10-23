@@ -24,7 +24,7 @@ body.claw-page {
 .rail { position: absolute; left: 10px; right: 10px; top: 16px; height: 8px; border-radius: 4px; background: linear-gradient(180deg, #e7ebf3, #7a8395); box-shadow: 0 2px 4px rgba(0, 0, 0, .5); }
 
 /* The carriage slides along the rail; --drop is how far the claw goes down. */
-.carriage { --drop: 0px; position: absolute; top: 12px; left: 50%; width: 76px; margin-left: -38px; z-index: 3; }
+.carriage { --drop: 0px; position: absolute; top: 12px; left: 0; width: 76px; z-index: 3; will-change: transform; }
 /* Rope + claw hang from the trolley and swing around it. */
 .swing { transform-origin: 50% 0; will-change: transform; }
 .swing.settle { transition: transform .45s ease-out; }

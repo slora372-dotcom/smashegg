@@ -78,52 +78,56 @@
   // ---------- Claw movement ----------
   const glass = $("glass"), carriage = $("carriage"), claw = $("claw"), swing = $("swing");
   let verified = "", moving = false, busy = false, x = 0, dir = 1, last = 0, timer = null;
-  let angle = 0, kick = 0, kickAt = 0, jitter = 0, nowT = 0;
+  let angle = 0, kick = 0, kickAt = 0, drawX = 0, swingLen = 100, C = [];
 
-  // Centre of each chest, measured from the left of the glass.
-  const centers = () => {
+  // Centre of each chest, measured from the left of the glass. Measured once
+  // (and again on resize), not every frame, so phones animate smoothly.
+  function measure() {
     const g = glass.getBoundingClientRect();
-    return chests.map((c) => { const r = c.getBoundingClientRect(); return r.left - g.left + r.width / 2; });
-  };
-  const place = (px) => { carriage.style.left = px + "px"; };
-  function parkCenter() { const c = centers(); x = c[2]; place(x); }
+    C = chests.map((c) => { const r = c.getBoundingClientRect(); return r.left - g.left + r.width / 2; });
+    swingLen = swing.offsetHeight * 0.9;
+    return C;
+  }
+  const centers = () => (C.length ? C : measure());
+  // Moves the claw with a GPU transform (no page re-layout).
+  const place = (px) => { drawX = px; carriage.style.transform = `translate3d(${px - 38}px,0,0)`; };
+  function parkCenter() { measure(); x = C[2]; place(x); }
 
   // The trolley speeds up and slows down, sometimes turns back early, and
   // the claw swings and shakes on its rope, so it is hard to aim.
+  // All shaking is made of smooth fast waves, not random jumps, so it stays fluid.
   function step(t) {
     if (!moving) return;
-    const c = centers(), min = c[0], max = c[c.length - 1];
-    const dt = last ? Math.min(50, t - last) : 16;
+    const min = C[0], max = C[C.length - 1];
+    const dt = last ? Math.min(40, t - last) : 16;
     last = t;
 
     const speed = 1 + 0.4 * Math.sin(t / 650) + 0.25 * Math.sin(t / 210 + 1.7); // 0.35x to 1.65x
     x += dir * ((max - min) / 1500) * speed * dt;
-    x += (Math.random() - 0.5) * 0.8;                                            // small shake
-    nowT = t;
-    // Turning: a hard jolt that swings the claw back and forth a few times before it calms down.
-    const turn = (d) => { dir = d; kick = 22 * -d; kickAt = nowT; if (navigator.vibrate) navigator.vibrate(15); };
+    // Turning: a hard jolt that swings the claw back and forth before it calms down.
+    const turn = (d) => { dir = d; kick = 22 * -d; kickAt = t; };
     if (x >= max) { x = max; turn(-1); }
     if (x <= min) { x = min; turn(1); }
     if (Math.random() < 0.003 * (dt / 16)) turn(-dir);                           // sudden change of direction
 
-    // Swing angle: a slow sway, a faster wobble, the jolt after turning, and jitter.
-    kick *= Math.pow(0.9975, dt);                          // fades over about 1.5 s
-    const jolt = kick * Math.cos((t - kickAt) / 85);       // swings back and forth while fading
-    jitter += ((Math.random() - 0.5) * 2.4 - jitter) * 0.15;
-    angle = 6 * Math.sin(t / 300) + 2.5 * Math.sin(t / 95 + 0.8) + jolt - dir * 2 + jitter;
-    // The trolley shudders right after a turn too.
-    if (Math.abs(kick) > 6) x = Math.min(max, Math.max(min, x + (Math.random() - 0.5) * Math.abs(kick) * 0.25));
-    swing.style.transform = `rotate(${angle}deg)`;
-    place(x);
+    kick *= Math.pow(0.9975, dt);                                                // fades over about 1.5 s
+    const jolt = kick * Math.cos((t - kickAt) / 85);                             // swings back and forth
+    const tremble = 1.3 * Math.sin(t / 37) + 0.8 * Math.sin(t / 23 + 2.1);       // constant fine shake
+    angle = 6 * Math.sin(t / 300) + 2.5 * Math.sin(t / 95 + 0.8) + jolt - dir * 2 + tremble;
+
+    // Small side-to-side shudder, stronger just after a turn.
+    const shudder = (0.8 + Math.abs(kick) * 0.12) * Math.sin(t / 29);
+    swing.style.transform = `rotate(${angle.toFixed(2)}deg)`;
+    place(Math.min(max, Math.max(min, x + shudder)));
     requestAnimationFrame(step);
   }
 
   // Where the claw's fingers actually are (it hangs at an angle while swinging).
   function tipX() {
-    const len = swing.offsetHeight * 0.9;
-    return x - Math.sin((angle * Math.PI) / 180) * len;
+    return drawX - Math.sin((angle * Math.PI) / 180) * swingLen;
   }
   function startMoving() {
+    measure();
     moving = true; last = 0;
     claw.classList.add("open");
     requestAnimationFrame(step);
@@ -198,7 +202,7 @@
     c.forEach((v, k) => { if (Math.abs(v - tip) < Math.abs(c[i] - tip)) i = k; });
     swing.classList.add("settle");
     swing.style.transform = "rotate(0deg)";
-    carriage.style.transition = "left .35s ease";
+    carriage.style.transition = "transform .35s ease";
     place(c[i]); x = c[i];
     await wait(460);
     carriage.style.transition = "";
@@ -317,7 +321,7 @@
   }
 
   // ---------- Start ----------
-  addEventListener("resize", () => { if (!moving && !busy) parkCenter(); });
+  addEventListener("resize", () => { measure(); if (!moving && !busy) parkCenter(); });
   const saved = load();
   if (saved) { requestAnimationFrame(() => { parkCenter(); showClaimed(saved); }); recheck(saved); }
   else { requestAnimationFrame(lock); renderWinners(); }
