@@ -76,8 +76,9 @@
   }
 
   // ---------- Claw movement ----------
-  const glass = $("glass"), carriage = $("carriage"), claw = $("claw");
+  const glass = $("glass"), carriage = $("carriage"), claw = $("claw"), swing = $("swing");
   let verified = "", moving = false, busy = false, x = 0, dir = 1, last = 0, timer = null;
+  let angle = 0, kick = 0, jitter = 0;
 
   // Centre of each chest, measured from the left of the glass.
   const centers = () => {
@@ -87,16 +88,35 @@
   const place = (px) => { carriage.style.left = px + "px"; };
   function parkCenter() { const c = centers(); x = c[2]; place(x); }
 
+  // The trolley speeds up and slows down, sometimes turns back early, and
+  // the claw swings and shakes on its rope, so it is hard to aim.
   function step(t) {
     if (!moving) return;
     const c = centers(), min = c[0], max = c[c.length - 1];
     const dt = last ? Math.min(50, t - last) : 16;
     last = t;
-    x += dir * ((max - min) / 1500) * dt; // one full sweep about 1.5 s
-    if (x >= max) { x = max; dir = -1; }
-    if (x <= min) { x = min; dir = 1; }
+
+    const speed = 1 + 0.4 * Math.sin(t / 650) + 0.25 * Math.sin(t / 210 + 1.7); // 0.35x to 1.65x
+    x += dir * ((max - min) / 1500) * speed * dt;
+    x += (Math.random() - 0.5) * 0.8;                                            // small shake
+    const turn = (d) => { dir = d; kick = 7 * -d; };
+    if (x >= max) { x = max; turn(-1); }
+    if (x <= min) { x = min; turn(1); }
+    if (Math.random() < 0.003 * (dt / 16)) turn(-dir);                           // sudden change of direction
+
+    // Swing angle: a slow sway, a faster wobble, the jolt after turning, and jitter.
+    kick *= Math.pow(0.996, dt);
+    jitter += ((Math.random() - 0.5) * 2.4 - jitter) * 0.15;
+    angle = 7 * Math.sin(t / 300) + 2.5 * Math.sin(t / 95 + 0.8) + kick - dir * 2 + jitter;
+    swing.style.transform = `rotate(${angle}deg)`;
     place(x);
     requestAnimationFrame(step);
+  }
+
+  // Where the claw's fingers actually are (it hangs at an angle while swinging).
+  function tipX() {
+    const len = swing.offsetHeight * 0.9;
+    return x - Math.sin((angle * Math.PI) / 180) * len;
   }
   function startMoving() {
     moving = true; last = 0;
@@ -121,6 +141,7 @@
     $("dropBtn").disabled = true;
     claw.classList.remove("open", "closed");
     carriage.style.setProperty("--drop", "0px");
+    swing.style.transform = ""; angle = 0; kick = 0;
     chests.forEach((c) => { c.style.transform = ""; c.classList.remove("open", "faded"); });
     parkCenter();
   }
@@ -165,14 +186,19 @@
     $("dropBtn").disabled = true;
     $("status").textContent = "⬇ Cakar sedang turun...";
 
-    // Line up with the nearest chest.
+    // The chest under the swinging claw tip is the one it goes for.
     const c = centers();
+    const tip = tipX();
     let i = 0;
-    c.forEach((v, k) => { if (Math.abs(v - x) < Math.abs(c[i] - x)) i = k; });
-    carriage.style.transition = "left .25s ease";
+    c.forEach((v, k) => { if (Math.abs(v - tip) < Math.abs(c[i] - tip)) i = k; });
+    swing.classList.add("settle");
+    swing.style.transform = "rotate(0deg)";
+    carriage.style.transition = "left .35s ease";
     place(c[i]); x = c[i];
-    await wait(260);
+    await wait(460);
     carriage.style.transition = "";
+    swing.classList.remove("settle");
+    angle = 0;
 
     // Lower the claw so its fingers reach around the chest lid.
     const chest = chests[i];
