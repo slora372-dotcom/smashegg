@@ -5,7 +5,7 @@ const { brandOf, keysFor, pipeline, cmd, cleanPhone, pickPrize, makeCode, send, 
 
 // Numbers for testing: unlimited plays on all brands, no claim is recorded.
 // Remove a number here when testing is finished.
-const TEST_PHONES = ["0164200354"];
+const TEST_PHONES = [];
 
 module.exports = async (req, res) => {
   if (req.method !== "POST") return send(res, 405, { ok: false, error: "method" });
