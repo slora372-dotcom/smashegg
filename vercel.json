@@ -1,8 +1,5 @@
 {
   "cleanUrls": true,
-  "redirects": [
-    { "source": "/", "destination": "/smashegg/ggc", "permanent": false }
-  ],
   "headers": [
     {
       "source": "/assets/(.*)",

@@ -175,3 +175,6 @@ h1 span { display: block; background: var(--gold-grad); -webkit-background-clip:
 .lock-note b { color: var(--gold); }
 .lock-note[hidden] { display: none; }
 .actions.single { grid-template-columns: 1fr; }
+
+.back { display: inline-block; margin-bottom: 12px; padding: 6px 12px; border-radius: 20px; background: rgba(255, 255, 255, .1); border: 1px solid var(--line); font-size: 13px; font-weight: 700; color: var(--muted); }
+.back:hover { color: #fff; }
