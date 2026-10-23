@@ -233,7 +233,7 @@
 
   const MESSAGES = {
     not_found: "Nombor ini tidak berdaftar untuk event ini. Sila hubungi Live Chat.",
-    invalid_phone: "Sila masukkan nombor telefon yang sah (contoh: 0123456789).",
+    invalid_phone: "Sila masukkan nombor telefon yang sah (contoh: 60123456789).",
     too_many: "Terlalu banyak cubaan. Sila cuba lagi selepas 10 minit.",
     db_not_connected: "Sistem belum sedia. Sila hubungi Live Chat.",
     server_error: "Ralat sambungan. Sila cuba lagi.",
