@@ -17,7 +17,7 @@ const CAN = {
   claims: ["owner", "admin", "staff"],
   me: ["owner", "admin", "staff"],
   logout: ["owner", "admin", "staff"],
-  changeMyPassword: ["admin", "staff"],
+  changeMyPassword: ["owner", "admin", "staff"],
   add: ["owner", "admin"],
   remove: ["owner", "admin"],
   resetClaim: ["owner", "admin"],
@@ -168,6 +168,11 @@ module.exports = async (req, res) => {
         if (!validPassword(b.password)) return send(res, 400, { ok: false, error: "bad_password" });
         const ok = await checkLogin(who.user, b.oldPassword);
         if (!ok) return send(res, 400, { ok: false, error: "wrong_old_password" });
+        if (who.role === "owner") {
+          await cmd("SET", AUTH.ownerPass, JSON.stringify(hashPassword(b.password)));
+          await audit(who, "changed own password", "");
+          return send(res, 200, { ok: true });
+        }
         const raw = await cmd("HGET", AUTH.users, who.user);
         const rec = { ...JSON.parse(raw), ...hashPassword(b.password) };
         await cmd("HSET", AUTH.users, who.user, JSON.stringify(rec));

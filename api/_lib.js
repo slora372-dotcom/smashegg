@@ -93,6 +93,7 @@ const AUTH = {
   users: "admin:users",                 // hash: username -> {salt, hash, role, created}
   session: (t) => "admin:session:" + t, // login token -> {user, role}
   audit: "admin:audit",                 // who did what
+  ownerPass: "admin:ownerpass",         // owner's own password, once changed in Tetapan
   tries: (ip) => "admin:tries:" + ip,
 };
 const SESSION_SECONDS = 12 * 60 * 60;
@@ -115,6 +116,12 @@ async function checkLogin(username, password) {
   const u = String(username || "").trim().toLowerCase();
   if (!u || !password) return null;
   if (u === OWNER) {
+    // A password set in Tetapan wins; until then the ADMIN_PASSWORD setting in Vercel is used.
+    const saved = await cmd("GET", AUTH.ownerPass);
+    if (saved) {
+      const rec = JSON.parse(saved);
+      return safeEqual(hashPassword(password, rec.salt).hash, rec.hash) ? { user: OWNER, role: "owner" } : null;
+    }
     const want = process.env.ADMIN_PASSWORD || "";
     return want && safeEqual(password, want) ? { user: OWNER, role: "owner" } : null;
   }

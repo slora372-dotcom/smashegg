@@ -58,8 +58,24 @@
     $("login").hidden = true;
     $("panel").hidden = false;
     refresh();
-    if (role === "owner") loadUsers();
   }
+
+  // ---------- Sidebar categories ----------
+  const OPEN = {
+    summary: () => refresh(),
+    claims: () => loadClaims(),
+    users: () => loadUsers(),
+    audit: () => $("loadAudit").click(),
+  };
+  document.querySelectorAll(".nav [data-go]").forEach((b) =>
+    b.addEventListener("click", () => {
+      const go = b.dataset.go;
+      document.querySelectorAll(".nav [data-go]").forEach((x) => x.classList.toggle("on", x === b));
+      document.querySelectorAll(".view").forEach((v) => (v.hidden = v.dataset.view !== go));
+      if (OPEN[go]) OPEN[go]();
+      window.scrollTo(0, 0);
+    })
+  );
   $("loginForm").addEventListener("submit", async (e) => {
     e.preventDefault();
     const out = await call("login", { username: $("username").value, password: $("password").value });
@@ -258,16 +274,19 @@
     });
   }
 
-  // ---------- My password (admin / staff) ----------
-  if ($("myPassForm")) {
-    $("myPassForm").addEventListener("submit", async (e) => {
-      e.preventDefault();
-      const out = await call("changeMyPassword", { oldPassword: $("oldPass").value, password: $("myNewPass").value });
-      $("myPassMsg").className = out.ok ? "msg ok" : "msg err";
-      $("myPassMsg").textContent = out.ok ? "Kata laluan ditukar." : errText(out.error);
-      if (out.ok) { $("oldPass").value = ""; $("myNewPass").value = ""; }
-    });
-  }
+  // ---------- Settings: my password (everyone) ----------
+  $("myPassForm").addEventListener("submit", async (e) => {
+    e.preventDefault();
+    if ($("myNewPass").value !== $("myNewPass2").value) {
+      $("myPassMsg").className = "msg err";
+      $("myPassMsg").textContent = "Kata laluan baharu tidak sama.";
+      return;
+    }
+    const out = await call("changeMyPassword", { oldPassword: $("oldPass").value, password: $("myNewPass").value });
+    $("myPassMsg").className = out.ok ? "msg ok" : "msg err";
+    $("myPassMsg").textContent = out.ok ? "Kata laluan ditukar. Gunakan kata laluan baharu untuk log masuk seterusnya." : errText(out.error);
+    if (out.ok) { $("oldPass").value = ""; $("myNewPass").value = ""; $("myNewPass2").value = ""; }
+  });
 
   // ---------- Activity log ----------
   if ($("loadAudit")) {
