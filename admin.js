@@ -3,6 +3,7 @@
   const KEY = "smashEggAdminToken";
   let token = "";
   let role = "";
+  let myName = "";
   try { token = sessionStorage.getItem(KEY) || ""; } catch (e) {}
   const esc = (s) => String(s == null ? "" : s).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
 
@@ -49,6 +50,7 @@
     const me = await call("me");
     if (!me.ok) return showLogin(me.error === "not_logged_in" ? "" : errText(me.error));
     role = me.role;
+    myName = me.user;
     $("whoami").textContent = `Log masuk sebagai ${me.user} (${me.role})`;
     document.querySelectorAll("[data-roles]").forEach((el) => {
       if (!el.dataset.roles.split(" ").includes(role)) el.remove();
@@ -223,7 +225,7 @@
     const out = await call("listUsers");
     if (!out.ok) { $("userMsg").className = "msg err"; $("userMsg").textContent = errText(out.error); return; }
     $("usersTable").querySelector("tbody").innerHTML =
-      `<tr><td><b>owner</b></td><td>owner</td><td class="muted">Vercel</td><td></td></tr>` +
+      `<tr><td><b>${esc(myName)}</b></td><td>owner</td><td class="muted">Vercel</td><td></td></tr>` +
       out.users.map((u) =>
         `<tr><td><b>${esc(u.username)}</b></td><td>${esc(u.role)}</td><td>${new Date(u.created).toLocaleDateString()}</td>` +
         `<td><button class="ghost" data-pass="${esc(u.username)}">Tukar kata laluan</button><button class="danger" data-del="${esc(u.username)}">Padam</button></td></tr>`

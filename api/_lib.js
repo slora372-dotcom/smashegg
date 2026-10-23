@@ -107,13 +107,16 @@ function hashPassword(password, salt = crypto.randomBytes(16).toString("hex")) {
   return { salt, hash };
 }
 
-// Checks a username + password. "owner" always uses the ADMIN_PASSWORD setting in Vercel.
+// Owner login: this username + the ADMIN_PASSWORD setting in Vercel.
+const OWNER = (process.env.OWNER_USERNAME || "olen1919").toLowerCase();
+
+// Checks a username + password.
 async function checkLogin(username, password) {
   const u = String(username || "").trim().toLowerCase();
   if (!u || !password) return null;
-  if (u === "owner") {
+  if (u === OWNER) {
     const want = process.env.ADMIN_PASSWORD || "";
-    return want && safeEqual(password, want) ? { user: "owner", role: "owner" } : null;
+    return want && safeEqual(password, want) ? { user: OWNER, role: "owner" } : null;
   }
   const raw = await cmd("HGET", AUTH.users, u);
   if (!raw) return null;
@@ -133,7 +136,7 @@ async function getSession(req) {
   const raw = await cmd("GET", AUTH.session(token));
   if (!raw) return null;
   const who = JSON.parse(raw);
-  if (who.user === "owner") return { ...who, token };
+  if (who.role === "owner") return who.user === OWNER ? { ...who, token } : null;
   // A deleted account is logged out at once; a changed role applies at once.
   const rec = await cmd("HGET", AUTH.users, who.user);
   return rec ? { user: who.user, role: JSON.parse(rec).role, token } : null;
@@ -155,5 +158,5 @@ function handleError(res, e) {
 
 module.exports = {
   NS, KEYS, PRIZES, AUTH, ROLES, pipeline, cmd, cleanPhone, pickPrize, makeCode, send, body, clientIp,
-  rateLimited, hashPassword, checkLogin, createSession, getSession, audit, handleError,
+  OWNER, rateLimited, hashPassword, checkLogin, createSession, getSession, audit, handleError,
 };

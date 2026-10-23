@@ -3,11 +3,11 @@
 // needs the header "Authorization: Bearer <token>".
 //
 // Who can do what:
-//   owner  (username "owner", password = ADMIN_PASSWORD in Vercel): everything
+//   owner  (username olen1919, password = ADMIN_PASSWORD in Vercel): everything
 //   admin  : everything except managing accounts
 //   staff  : stats, lookup, claims, change own password
 const {
-  KEYS, AUTH, ROLES, pipeline, cmd, cleanPhone, send, body, clientIp,
+  KEYS, AUTH, ROLES, OWNER, pipeline, cmd, cleanPhone, send, body, clientIp,
   hashPassword, checkLogin, createSession, getSession, audit, handleError,
 } = require("./_lib");
 
@@ -29,7 +29,7 @@ const CAN = {
   setPassword: ["owner"],
 };
 
-const validUsername = (u) => /^[a-z0-9._-]{3,20}$/.test(u) && u !== "owner";
+const validUsername = (u) => /^[a-z0-9._-]{3,20}$/.test(u) && u !== OWNER;
 const validPassword = (p) => typeof p === "string" && p.length >= 8 && p.length <= 100;
 
 module.exports = async (req, res) => {
