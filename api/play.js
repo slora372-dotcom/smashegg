@@ -3,9 +3,9 @@
 //   otherwise    -> gives one prize to a registered phone, once.
 const { BRANDS, brandOf, keysFor, pipeline, cmd, cleanPhone, pickPrize, makeCode, send, body, rateLimited, handleError } = require("./_lib");
 
-// Numbers for testing: unlimited plays on all brands, no claim is recorded.
+// Numbers for testing, per game: unlimited plays, no claim is recorded.
 // Remove a number here when testing is finished.
-const TEST_PHONES = [];
+const TEST_PHONES = { clawggc: ["0164200354"] };
 
 module.exports = async (req, res) => {
   if (req.method !== "POST") return send(res, 405, { ok: false, error: "method" });
@@ -18,7 +18,7 @@ module.exports = async (req, res) => {
     if (!phone) return send(res, 400, { ok: false, error: "invalid_phone" });
 
     // Test numbers play on every brand, as often as they like, and nothing is saved.
-    if (TEST_PHONES.includes(phone)) {
+    if ((TEST_PHONES[brand] || []).includes(phone)) {
       if (b.check) return send(res, 200, { ok: true, status: "eligible", test: true });
       const egg = Math.max(0, Math.min(4, parseInt(b.egg, 10) || 0));
       const claim = { amount: pickPrize(BRANDS[brand].prizes), code: "TEST-" + makeCode().slice(3), egg, at: new Date().toISOString(), test: true };
